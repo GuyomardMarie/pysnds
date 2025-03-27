@@ -280,10 +280,10 @@ class SNDS_BC(SNDS_Treatment) :
         df['CT'] = self.Had_Treatment(self.BC_medical_codes['CT'], print_option=False)['Response']
 
         # Setting
-        df['CT_Setting'] = self.treatment_setting(self.BC_medical_codes['Surgery_BC']['Surgery'], self.BC_medical_codes['CT'])['Setting']
+        df['CT_Setting'] = self.treatment_setting(self.BC_medical_codes['CT'])['Setting']
 
         # Regimen
-        df['CT_Regimen'] = self.Chemotherapy_Regimen(self.BC_medical_codes['CT'])['CT_Regimen']
+        df['CT_Regimen'] = self.Chemotherapy_Regimen()['CT_Regimen']
 
 
         ### Radiotherapy
@@ -291,7 +291,7 @@ class SNDS_BC(SNDS_Treatment) :
         df['RT'] = self.Had_Treatment(self.BC_medical_codes['RT'], print_option=False)['Response']
 
         # Setting
-        df['RT_Setting'] = self.treatment_setting(self.BC_medical_codes['Surgery_BC']['Surgery'], self.BC_medical_codes['RT'])['Setting']
+        df['RT_Setting'] = self.treatment_setting(self.BC_medical_codes['RT'])['Setting']
 
 
         ### TT
@@ -299,7 +299,7 @@ class SNDS_BC(SNDS_Treatment) :
         df['TT'] = self.Had_Treatment(self.BC_medical_codes['TT']['Pertuzumab'], print_option=False)['Response']
         
         # Setting
-        df['TT_Setting'] = self.treatment_setting(self.BC_medical_codes['Surgery_BC']['Surgery'], self.BC_medical_codes['TT']['Pertuzumab'])['Setting']
+        df['TT_Setting'] = self.treatment_setting(self.BC_medical_codes['TT']['Pertuzumab'])['Setting']
 
         
         ### ET
@@ -307,10 +307,10 @@ class SNDS_BC(SNDS_Treatment) :
         df['ET'] = self.Had_Treatment(self.BC_medical_codes['ET']['All'], print_option=False)['Response']
 
         # Setting
-        df['ET_Setting'] = self.treatment_setting(self.BC_medical_codes['Surgery_BC']['Surgery'], self.BC_medical_codes['ET']['All'])['Setting']
+        df['ET_Setting'] = self.treatment_setting(self.BC_medical_codes['ET']['All'])['Setting']
 
         # Treatment
-        df['ET_Treatment'] = self.EndoctrineTherapy_Treatment(self.BC_medical_codes['ET'])['ET_Treatment']
+        df['ET_Treatment'] = self.EndoctrineTherapy_Treatment()['ET_Treatment']
 
         # Regimen
         df['ET_Regimen'] = np.select([df['ET_Treatment'].isin(['AI', 'Tamoxifen']),
