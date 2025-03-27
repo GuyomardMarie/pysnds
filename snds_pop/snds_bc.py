@@ -1,11 +1,10 @@
 from .snds_query import SNDS_Query
 from .snds_treatment import SNDS_Treatment
+import pkg_resources
 import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
-
 
 
 class SNDS_BC(SNDS_Treatment) :
@@ -16,8 +15,9 @@ class SNDS_BC(SNDS_Treatment) :
     def __init__(self, conn, df_ID_PATIENT):
         self.conn = conn
         self.df_ID_PATIENT = df_ID_PATIENT
-        with open('BC_medical_codes.json', 'r') as file:
-                self.BC_medical_codes = json.load(file)
+        json_path = pkg_resources.resource_filename(__name__, 'BC_medical_codes.json')
+        with open(json_path, 'r') as file:
+            self.BC_medical_codes = json.load(file)
 
         self.SNDS_query = SNDS_Query(self.conn)
         self.SNDS_Treatment = SNDS_Treatment(self.conn, self.df_ID_PATIENT)
