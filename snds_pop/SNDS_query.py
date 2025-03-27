@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 
-class SNDS_query() :
+class SNDS_Query() :
     """
     Class for navigating and identifying population in the SNDS.    
     """
@@ -20,7 +20,7 @@ class SNDS_query() :
             Connection to the database.
         '''
 
-        super(SNDS_query, self).__init__()
+        super(SNDS_Query, self).__init__()
         self.conn = conn
 
 
@@ -180,7 +180,7 @@ class SNDS_query() :
         return df_age
 
 
-    def loc_ccam_dcir(self, df_ID_PATIENT, list_CCAM, print_option=True):
+    def loc_ccam_dcir(self, df_ID_PATIENT, list_CCAM=None, print_option=True):
         '''
         Method for gathering specific CCAM data from the targeted population in the DCIR.
 
@@ -189,7 +189,7 @@ class SNDS_query() :
         df_ID_PATIENT : DataFrame
             DataFrame containing the column 'BEN_IDT_ANO', which holds the unique identifiers of the targeted population.
         list_CCAM : list
-            List of CCAM codes to be retrieved.
+            List of CCAM codes to be retrieved. If None all CCAM codes will be returned for the targeted population. Default is None.
         print_option : bool, optional
             If True, prints the number of unique patients identified with at least one of the specified CCAM codes. Default is True.
 
@@ -202,7 +202,13 @@ class SNDS_query() :
         '''
 
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
-        liste_ccam_str = ', '.join(f"'{valeur}'" for valeur in list_CCAM)
+        
+        if list_CCAM:
+            liste_ccam_str = ', '.join(f"'{valeur}'" for valeur in list_CCAM)
+            condition_ccam = f"A.CAM_PRS_IDE IN ({liste_ccam_str}) AND "
+        else:
+            condition_ccam = ""
+
 
         query_CCAM_DCIR = f"""
 
@@ -238,7 +244,7 @@ class SNDS_query() :
             INNER JOIN MaxDates D
                 ON C.BEN_IDT_ANO = D.BEN_IDT_ANO AND C.BEN_DTE_MAJ = D.MaxDate
 
-            WHERE A.CAM_PRS_IDE IN ({liste_ccam_str}) AND D.BEN_IDT_ANO IN ({liste_benidtano_str})
+            WHERE {condition_ccam} D.BEN_IDT_ANO IN ({liste_benidtano_str})
             """
 
         df_ccam_dcir = self.dbGetQuery(query_CCAM_DCIR)
@@ -249,7 +255,7 @@ class SNDS_query() :
         return df_ccam_dcir
     
 
-    def loc_ccam_pmsi(self, df_ID_PATIENT, list_CCAM, print_option=True):
+    def loc_ccam_pmsi(self, df_ID_PATIENT, list_CCAM=None, print_option=True):
         '''
         Method for gathering specific CCAM data from the targeted population in the PMSI.
 
@@ -258,7 +264,7 @@ class SNDS_query() :
         df_ID_PATIENT : DataFrame
             DataFrame containing the column 'BEN_IDT_ANO', which holds the unique identifiers of the targeted population in the PMSI.
         list_CCAM : list
-            List of CCAM codes to be retrieved.
+            List of CCAM codes to be retrieved. If None all CCAM codes will be returned for the targeted population. Default is None.
         print_option : bool, optional
             If True, prints the number of unique patients identified with at least one of the specified CCAM codes. Default is True.
 
@@ -271,7 +277,11 @@ class SNDS_query() :
         '''
         
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
-        liste_ccam_str = ', '.join(f"'{valeur}'" for valeur in list_CCAM)
+        if list_CCAM:
+            liste_ccam_str = ', '.join(f"'{valeur}'" for valeur in list_CCAM)
+            condition_ccam = f"B.CDC_ACT IN ({liste_ccam_str}) AND "
+        else:
+            condition_ccam = ""
 
         query_CCAM_PMSI = f"""
             WITH MaxDates AS (
@@ -300,7 +310,7 @@ class SNDS_query() :
             INNER JOIN MaxDates D
               ON C.BEN_IDT_ANO = D.BEN_IDT_ANO AND C.BEN_DTE_MAJ = D.MaxDate
             
-            WHERE B.CDC_ACT IN ({liste_ccam_str}) AND C.BEN_IDT_ANO IN ({liste_benidtano_str})
+            WHERE {condition_ccam} C.BEN_IDT_ANO IN ({liste_benidtano_str})
             """
         
         df_ccam_pmsi = self.dbGetQuery(query_CCAM_PMSI)
@@ -312,7 +322,7 @@ class SNDS_query() :
     
     
     
-    def loc_icd10_pmsi(self, df_ID_PATIENT, list_ICD10, print_option=True):
+    def loc_icd10_pmsi(self, df_ID_PATIENT, list_ICD10=None, print_option=True):
         '''
         Method for gathering specific ICD-10 data from the targeted population in the PMSI.
 
@@ -321,7 +331,7 @@ class SNDS_query() :
         df_ID_PATIENT : DataFrame
             DataFrame containing the column 'BEN_IDT_ANO', which holds the unique identifiers of the targeted population in the PMSI.
         list_ICD10 : list
-            List of ICD-10 codes to be retrieved.
+            List of ICD-10 codes to be retrieved. If None all ICD-10 codes will be returned for the targeted population. Default is None.
         print_option : bool, optional
             If True, prints the number of unique patients identified with at least one of the specified ICD-10 codes. Default is True.
 
@@ -334,7 +344,13 @@ class SNDS_query() :
         '''
         
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
-        liste_icd10_str = ', '.join(f"'{valeur}'" for valeur in list_ICD10)
+        if list_ICD10:
+            liste_icd10_str = ', '.join(f"'{valeur}'" for valeur in list_ICD10)
+            condition_icd10_1 = f"B.DGN_PAL IN ({liste_icd10_str}) OR B.DGN_REL IN ({liste_icd10_str}) AND "
+            condition_icd10_2 = f"E.ASS_DGN IN ({liste_icd10_str}) AND "
+        else:
+            condition_icd10_1 = ""
+            condition_icd10_2 = ""
 
         query_ICD10_PMSI = f"""
             WITH MaxDates AS (
@@ -365,7 +381,7 @@ class SNDS_query() :
             INNER JOIN MaxDates D
             ON C.BEN_IDT_ANO = D.BEN_IDT_ANO AND C.BEN_DTE_MAJ = D.MaxDate
 
-            WHERE B.DGN_PAL IN ({liste_icd10_str}) OR B.DGN_REL IN ({liste_icd10_str}) AND C.BEN_IDT_ANO IN ({liste_benidtano_str})
+            WHERE {condition_icd10_1} C.BEN_IDT_ANO IN ({liste_benidtano_str})
             
             UNION ALL
             
@@ -391,7 +407,7 @@ class SNDS_query() :
             INNER JOIN MaxDates D
             ON C.BEN_IDT_ANO = D.BEN_IDT_ANO AND C.BEN_DTE_MAJ = D.MaxDate
 
-            WHERE E.ASS_DGN IN ({liste_icd10_str}) AND C.BEN_IDT_ANO IN ({liste_benidtano_str})
+            WHERE {condition_icd10_2} C.BEN_IDT_ANO IN ({liste_benidtano_str})
         """
     
         df_icd10_pmsi = self.dbGetQuery(query_ICD10_PMSI)
@@ -402,7 +418,7 @@ class SNDS_query() :
         return df_icd10_pmsi
     
 
-    def loc_ucd_pmsi(self, df_ID_PATIENT, list_UCD, print_option=True):
+    def loc_ucd_pmsi(self, df_ID_PATIENT, list_UCD=None, print_option=True):
         '''
         Method for gathering specific UCD data from the targeted population in the PMSI.
 
@@ -411,7 +427,7 @@ class SNDS_query() :
         df_ID_PATIENT : DataFrame
             DataFrame containing the column 'BEN_IDT_ANO', which holds the unique identifiers of the targeted population in the PMSI.
         list_UCD : list
-            List of UCD codes to be retrieved.
+            List of UCD codes to be retrieved. If None all UCD codes will be returned for the targeted population. Default is None.
         print_option : bool, optional
             If True, prints the number of unique patients identified with at least one of the specified UCD codes. Default is True.
 
@@ -424,8 +440,12 @@ class SNDS_query() :
         '''
         
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
-        liste_ucd_str = ', '.join(f"'{valeur}'" for valeur in list_UCD)
-
+        if list_UCD:
+            liste_ucd_str = ', '.join(f"'{valeur}'" for valeur in list_UCD)
+            condition_ucd = f"B.UCD_UCD_COD IN ({liste_ucd_str}) OR B.UCD_COD IN ({liste_ucd_str}) AND "
+        else:
+            condition_ucd = ""
+        
         query_UCD_PMSI = f"""
 
             WITH MaxDates AS (
@@ -455,7 +475,7 @@ class SNDS_query() :
             INNER JOIN MaxDates D
             ON C.BEN_IDT_ANO = D.BEN_IDT_ANO AND C.BEN_DTE_MAJ = D.MaxDate
 
-            WHERE B.UCD_UCD_COD IN ({liste_ucd_str}) OR B.UCD_COD IN ({liste_ucd_str}) AND C.BEN_IDT_ANO IN ({liste_benidtano_str})
+            WHERE {condition_ucd} C.BEN_IDT_ANO IN ({liste_benidtano_str})
         """
     
         df_ucd_pmsi = self.dbGetQuery(query_UCD_PMSI)
@@ -466,7 +486,7 @@ class SNDS_query() :
         return df_ucd_pmsi
     
 
-    def loc_cip_dcir(self, df_ID_PATIENT, list_CIP13, print_option=True):
+    def loc_cip_dcir(self, df_ID_PATIENT, list_CIP13=None, print_option=True):
         '''
         Method for gathering specific UCD data from the targeted population in the DCIR.
 
@@ -475,7 +495,7 @@ class SNDS_query() :
         df_ID_PATIENT : DataFrame
             DataFrame containing the column 'BEN_IDT_ANO', which holds the unique identifiers of the targeted population.
         list_CIP13 : list
-            List of CIP-13 codes to be retrieved.
+            List of CIP-13 codes to be retrieved. If None all CIP-13 codes will be returned for the targeted population. Default is None.
         print_option : bool, optional
             If True, prints the number of unique patients identified with at least one of the specified CIP-13 codes. Default is True.
 
@@ -489,8 +509,12 @@ class SNDS_query() :
         '''
         
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
-        liste_cip13_str = ', '.join(f"'{valeur}'" for valeur in list_CIP13)
-
+        if list_CIP13:
+            liste_cip13_str = ', '.join(f"'{valeur}'" for valeur in list_CIP13)
+            condition_cip13 = f"D.PHA_PRS_C13 IN ({liste_cip13_str}) AND "
+        else:
+            condition_cip13 = ""
+            
         query_CIP13_DCIR = f"""
             WITH MaxDates AS (
                 SELECT BEN_IDT_ANO, MAX(BEN_DTE_MAJ) AS MaxDate
@@ -538,9 +562,7 @@ class SNDS_query() :
             LEFT JOIN IR_PHA_R E ON 
                 D.PHA_PRS_C13 = E.PHA_CIP_C13
 
-            WHERE                            
-                D.PHA_PRS_C13 IN ({liste_cip13_str})
-                AND B.BEN_IDT_ANO IN ({liste_benidtano_str})
+            WHERE {condition_cip13} B.BEN_IDT_ANO IN ({liste_benidtano_str})
         """
     
         df_cip_dcir = self.dbGetQuery(query_CIP13_DCIR)
