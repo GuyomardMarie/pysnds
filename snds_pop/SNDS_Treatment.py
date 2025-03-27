@@ -2,11 +2,11 @@
 Class for detecting the presence of an event in the SNDS for a targeted population and determining its occurrence dates, including the first appearance.
 '''
 
-from SNDS_query import SNDS_query
+from .snds_query import SNDS_Query
 import pandas as pd
 import numpy as np
 
-class SNDS_Treatment(SNDS_query) :
+class SNDS_Treatment(SNDS_Query) :
     """
     Class for detecting the presence of an event in the SNDS for a targeted population and determining its occurrence dates.
     """
@@ -159,11 +159,3 @@ class SNDS_Treatment(SNDS_query) :
         df_date = self.treatment_dates(dict_code)
 
         return df_date.groupby('BEN_IDT_ANO')['DATE'].min().reset_index()
-
-
-
-
-
-        
-        
-    
