@@ -10,3 +10,10 @@ cd snds_pop
 
 
 pip install -e .
+
+
+
+
+
+
+Ajouter les comorbidités ?
