@@ -540,7 +540,7 @@ class SNDS_BC(SNDS_Treatment) :
         
 
         # statistic by pathway
-        if (age_range == True) & (pathway == False) :
+        if (age_range == False) & (pathway == True) :
 
             stat_pathway = {}
 
@@ -700,3 +700,4 @@ class SNDS_BC(SNDS_Treatment) :
             plt.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), ncol=len(labels), fontsize=12)
             plt.tight_layout()
             plt.show()
+
