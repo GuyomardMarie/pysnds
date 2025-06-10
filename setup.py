@@ -4,7 +4,7 @@ import setuptools
 VERSION = 0.1
 
 setuptools.setup(
-    name="py_snds",
+    name="pysnds",
     version=VERSION,
     author="Marie Guyomard",
     author_email="marie.guyomard83@gmail.com",
