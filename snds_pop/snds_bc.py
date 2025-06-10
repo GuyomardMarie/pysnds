@@ -454,36 +454,36 @@ class SNDS_BC(SNDS_Treatment) :
             general_stat = {}
 
             # Pathway
-            general_stat['Pathway'] = round(df_final.Pathway.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['Pathway'] = round(df_final.Pathway.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
 
             # BC Subtype
-            general_stat['BC_SubType'] = round(df_final.BC_SubType.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['BC_SubType'] = round(df_final.BC_SubType.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
             
             # Nodal Status
-            general_stat['Nodal_Status'] = round(df_final.Nodal_Status.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['Nodal_Status'] = round(df_final.Nodal_Status.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
 
             # Surgery
-            general_stat['Mastectomy'] = round(df_final.Mastectomy.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['Partial_Mastectomy'] = round(df_final.Partial_Mastectomy.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['Mastectomy'] = round(df_final.Mastectomy.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['Partial_Mastectomy'] = round(df_final.Partial_Mastectomy.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
 
             # CT
-            general_stat['CT'] = round(df_final.CT.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['CT_Setting'] = round(df_final.CT_Setting.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['CT_Regimen'] = round(df_final.CT_Regimen.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['CT'] = round(df_final.CT.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['CT_Setting'] = round(df_final.CT_Setting.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['CT_Regimen'] = round(df_final.CT_Regimen.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
 
             # RT
-            general_stat['RT'] = round(df_final.RT.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['RT_Setting'] = round(df_final.RT_Setting.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['RT'] = round(df_final.RT.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['RT_Setting'] = round(df_final.RT_Setting.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
 
             # TT
-            general_stat['TT'] = round(df_final.TT.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['TT_Setting'] = round(df_final.TT_Setting.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['TT'] = round(df_final.TT.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['TT_Setting'] = round(df_final.TT_Setting.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
 
             # ET
-            general_stat['ET'] = round(df_final.ET.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['ET_Setting'] = round(df_final.ET_Setting.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['ET_Treatment'] = round(df_final.ET_Treatment.value_counts(normalize=True).sort_index() * 100,2)
-            general_stat['ET_Regimen'] = round(df_final.ET_Regimen.value_counts(normalize=True).sort_index() * 100,2)
+            general_stat['ET'] = round(df_final.ET.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['ET_Setting'] = round(df_final.ET_Setting.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['ET_Treatment'] = round(df_final.ET_Treatment.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
+            general_stat['ET_Regimen'] = round(df_final.ET_Regimen.value_counts(normalize=True).sort_index(key=lambda x:x.map(lambda v: (0, v) if isinstance(v, int) else (1, str(v)))) * 100,2)
 
             if save_option == True:
                 with pd.ExcelWriter(path+'general_stat.xlsx', engine='openpyxl') as writer:
