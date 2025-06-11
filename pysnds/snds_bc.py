@@ -13,6 +13,10 @@ class SNDS_BC(SNDS_Treatment) :
     """
 
     def __init__(self, conn, df_ID_PATIENT):
+
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
+
         self.conn = conn
         self.df_ID_PATIENT = df_ID_PATIENT
         json_path = pkg_resources.resource_filename(__name__, 'BC_medical_codes.json')
@@ -22,13 +26,14 @@ class SNDS_BC(SNDS_Treatment) :
         self.SNDS_query = SNDS_Query(self.conn)
         self.SNDS_Treatment = SNDS_Treatment(self.conn, self.df_ID_PATIENT)
 
-    def treatment_setting(self, dict_code_treatment):
+
+    def treatment_setting(self, dict_treatment):
         '''
         Method to determine the setting of a treatment : neoadjuvant (before the surgery) or adjuvant (after the surgery).
 
         Parameters
         ----------
-        dict_code_treatment : dict
+        dict_treatment : dict
             Dictionary of codes referring to the treatment of interest. Each key represents a code type 
             (possible keys: {'CCAM', 'CIP13', 'UCD', 'ICD10'}) and maps to a list of corresponding codes.
 
@@ -39,9 +44,12 @@ class SNDS_BC(SNDS_Treatment) :
             The values taken by the variable are 'No' (for no surgery), 'Neoadjuvant' or 'Adjuvant'.
         '''
         
+        if type(dict_treatment) != dict :
+            raise ValueError("dict_treatment must be a dictionnary with keys 'CCAM', 'CIP13', 'UCD' and/or 'ICD10'.")
+
         # Compute first date of treatment
         surgery_date = self.first_date_treatment(self.BC_medical_codes['Surgery_BC']['Surgery'])
-        treatment_date = self.first_date_treatment(dict_code_treatment)
+        treatment_date = self.first_date_treatment(dict_treatment)
 
         merged = pd.merge(treatment_date[['BEN_IDT_ANO', 'DATE']], 
                         surgery_date[['BEN_IDT_ANO', 'DATE']], 
@@ -372,7 +380,7 @@ class SNDS_BC(SNDS_Treatment) :
         return df_pathway
     
 
-    def BC_subtype(self, df_char):
+    def BC_subtype(self, df_char=None):
         '''
         Method to determine the Breast Cancer Subtype for each patient.
 
@@ -386,6 +394,9 @@ class SNDS_BC(SNDS_Treatment) :
         df_subtype : Dataframe
             Subtype of Breast Cancer for each patient : 'HER2', 'Luminal', 'TNBC' or' 'Unknown'.
         '''
+
+        if df_char is None:
+            df_char = self.BC_POP_Stat()
 
         def def_BC_type(pathway):
             # HER2
@@ -700,4 +711,3 @@ class SNDS_BC(SNDS_Treatment) :
             plt.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), ncol=len(labels), fontsize=12)
             plt.tight_layout()
             plt.show()
-
