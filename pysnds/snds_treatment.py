@@ -13,6 +13,10 @@ class SNDS_Treatment(SNDS_Query) :
 
     def __init__(self, conn, df_ID_PATIENT):
         super().__init__(conn)
+
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
+
         self.df_ID_PATIENT = df_ID_PATIENT
 
 
@@ -34,6 +38,9 @@ class SNDS_Treatment(SNDS_Query) :
         df_Treatment : DataFrame
             DataFrame containing the event response ('Response') for each patient in the targeted population ('BEN_IDT_ANO').
         '''
+
+        if type(dict_code) != dict :
+            raise ValueError("dict_code must be a dictionnary with keys 'CCAM', 'CIP13', 'UCD' and/or 'ICD10'.")
 
         unique_identifier = pd.DataFrame(columns=['BEN_IDT_ANO'])
         df_Treatment = self.df_ID_PATIENT.copy()
@@ -81,7 +88,10 @@ class SNDS_Treatment(SNDS_Query) :
             DataFrame containing the event based on the type of code ('COD_ACT', 'COD_DIAG', 'COD_UCD', 'COD_CIP'), 
             along with its occurrence date ('DATE'), for each patient in the targeted population ('BEN_IDT_ANO').
         '''
-        
+
+        if type(dict_code) != dict :
+            raise ValueError("dict_code must be a dictionnary with keys 'CCAM', 'CIP13', 'UCD' and/or 'ICD10'.")
+
         df_date = pd.DataFrame(columns=['BEN_IDT_ANO', 'COD_ACT', 'COD_DIAG', 'COD_UCD', 'COD_CIP', 'DATE'])
         
         for key in dict_code :
@@ -155,7 +165,10 @@ class SNDS_Treatment(SNDS_Query) :
         df_date : DataFrame
             DataFrame containing the first occurrence date of the targeted event ('DATE'), for each patient in the targeted population ('BEN_IDT_ANO').
         '''
-    
+        
+        if type(dict_code) != dict :
+            raise ValueError("dict_code must be a dictionnary with keys 'CCAM', 'CIP13', 'UCD' and/or 'ICD10'.")
+
         df_date = self.treatment_dates(dict_code)
 
         return df_date.groupby('BEN_IDT_ANO')['DATE'].min().reset_index()
