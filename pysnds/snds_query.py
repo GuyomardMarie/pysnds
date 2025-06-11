@@ -92,6 +92,9 @@ class SNDS_Query() :
         df_age : DataFrame
             DataFrame containing the age at the time of enrollment (column DATE_DIAG) for each patient (BEN_IDT_ANO).
         '''
+
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
             
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
 
@@ -201,6 +204,13 @@ class SNDS_Query() :
             for each patient ('BEN_IDT_ANO').
         '''
 
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
+
+        if list_CCAM is not None :
+            if type(list_CCAM) != list :
+                raise ValueError("list_CCAM must be a list of CCAM medical codes.")
+
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
         
         if list_CCAM:
@@ -275,6 +285,13 @@ class SNDS_Query() :
             along with their execution dates ('EXE_SOI_AMD', 'EXE_SOI_AMF', and 'ENT_DAT_DEL'),
             for each patient ('BEN_IDT_ANO') and specific hospital stays ('ETA_NUM', 'RSA_NUM').
         '''
+
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
+
+        if list_CCAM is not None :
+            if type(list_CCAM) != list :
+                raise ValueError("list_CCAM must be a list of CCAM medical codes.")
         
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
         if list_CCAM:
@@ -342,6 +359,13 @@ class SNDS_Query() :
             along with their execution dates ('EXE_SOI_AMD', 'EXE_SOI_AMF'), 
             for each patient ('BEN_IDT_ANO') and specific hospital stays ('ETA_NUM', 'RSA_NUM').
         '''
+
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
+
+        if list_ICD10 is not None :
+            if type(list_ICD10) != list :
+                raise ValueError("list_ICD10 must be a list of ICD-10 medical codes.")
         
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
         if list_ICD10:
@@ -439,6 +463,13 @@ class SNDS_Query() :
             for each patient ('BEN_IDT_ANO') and specific hospital stays ('ETA_NUM', 'RSA_NUM').
         '''
         
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
+
+        if list_UCD is not None :
+            if type(list_UCD) != list :
+                raise ValueError("list_UCD must be a list of UCD medical codes.")
+
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
         if list_UCD:
             liste_ucd_str = ', '.join(f"'{valeur}'" for valeur in list_UCD)
@@ -508,6 +539,13 @@ class SNDS_Query() :
             for each patient ('BEN_IDT_ANO').
         '''
         
+        if set(df_ID_PATIENT.columns) != {"BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"}:
+            raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
+
+        if list_CIP13 is not None :
+            if type(list_CIP13) != list :
+                raise ValueError("list_CIP13 must be a list of CIP-13 medical codes.")
+
         liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
         if list_CIP13:
             liste_cip13_str = ', '.join(f"'{valeur}'" for valeur in list_CIP13)
