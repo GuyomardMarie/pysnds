@@ -10,13 +10,8 @@ cd snds_pop
 
 
 pip install -e .
+ou pip install .
 
-
-
-
-
-
-Ajouter les comorbidités ?
 
 Ajouter les périodes de recherche ? les dates ? Dans le code actuel on traite de T_MCOaaX, il faut généraliser ? + Ajouter pour le DCIR les dates aussi
 
