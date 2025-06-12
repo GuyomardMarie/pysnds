@@ -256,10 +256,10 @@ class SNDS_BC(SNDS_Treatment) :
                 - 'TT' : No : '0' / Yes : '1'
                 - 'TT_Setting' : 'No', 'Neoadjuvant' or 'Adjuvant'
             - Endoctrine Therapy
-                - 'CT' : No : '0' / Yes : '1'
-                - 'CT_Setting' : 'No', 'Neoadjuvant' or 'Adjuvant'
-                - 'CT_Treatment' : 'No', 'Tamoxifen', 'AI', 'Tamoxifen with Agonist', 'AI with Agonist', 'Tamoxifen followed by AI', 'AI followed by Tamoxifen'
-                 - 'CT_Regimen' : 'No', 'Unitherapy' or 'Bitherapy'
+                - 'ET' : No : '0' / Yes : '1'
+                - 'ET_Setting' : 'No', 'Neoadjuvant' or 'Adjuvant'
+                - 'ET_Treatment' : 'No', 'Tamoxifen', 'AI', 'Tamoxifen with Agonist', 'AI with Agonist', 'Tamoxifen followed by AI', 'AI followed by Tamoxifen'
+                 - 'ET_Regimen' : 'No', 'Unitherapy' or 'Bitherapy'
         '''
 
         df = pd.DataFrame({'ID_PATIENT' : self.df_ID_PATIENT['BEN_IDT_ANO']})
@@ -680,7 +680,7 @@ class SNDS_BC(SNDS_Treatment) :
 
             for p, label in zip(ax.patches, counts.index):
                 percentage = p.get_height()
-                if percentage > 0:  # Afficher uniquement si > 0
+                if percentage > 0:  
                     x = p.get_x() + p.get_width() / 2
                     y = p.get_y() + p.get_height() / 2
                     ax.text(x, y, f'{percentage:.1f}%', ha='center', va='center', fontsize=12, color='black')
@@ -695,7 +695,7 @@ class SNDS_BC(SNDS_Treatment) :
 
             for p in ax.patches:
                 percentage = p.get_height()
-                if percentage > 0:  # Afficher uniquement si > 0
+                if percentage > 0:  
                     x = p.get_x() + p.get_width() / 2
                     y = p.get_y() + p.get_height() / 2
                     ax.text(x, y, f'{percentage:.1f}%', ha='center', va='center', fontsize=12)
@@ -711,3 +711,4 @@ class SNDS_BC(SNDS_Treatment) :
             plt.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), ncol=len(labels), fontsize=12)
             plt.tight_layout()
             plt.show()
+
