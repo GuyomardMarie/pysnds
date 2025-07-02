@@ -609,4 +609,89 @@ class SNDS_Query() :
             print(str(len(np.unique(df_cip_dcir['BEN_IDT_ANO']))) + ' patient identified using CIP13 code in the DCIR.')
         
         return df_cip_dcir
+    
+    
+    
+    def export_pickle(self, df_ID_PATIENT, path='', list_CCAM=None, list_ICD10=None, list_UCD=None, list_CIP13=None):
+        '''
+        Method for exporting the dataframe of data in pickle.
 
+        Parameters
+        ----------
+        df_ID_PATIENT : DataFrame
+            DataFrame containing the column 'BEN_IDT_ANO', which holds the unique identifiers of the targeted population.
+        list_CCAM : list
+            List of CCAM codes to be retrieved. If None all CCAM codes will be returned for the targeted population. Default is None.
+        list_ICD10 : list
+            List of ICD-10 codes to be retrieved. If None all ICD-10 codes will be returned for the targeted population. Default is None.
+        list_UCD : list
+            List of UCD codes to be retrieved. If None all UCD codes will be returned for the targeted population. Default is None.
+        list_CIP13 : list
+            List of CIP-13 codes to be retrieved. If None all CIP-13 codes will be returned for the targeted population. Default is None.
+        
+        Returns
+        -------
+        None. Export
+        '''
+        
+        
+        # CCAM
+        CCAM_DCIR = self.loc_ccam_dcir(df_ID_PATIENT, list_CCAM=list_CCAM, print_option=False)
+        CCAM_PMSI = self.loc_ccam_pmsi(df_ID_PATIENT, list_CCAM=list_CCAM, print_option=False) 
+        df_dcir = CCAM_DCIR[['BEN_IDT_ANO', 'CAM_PRS_IDE', 'EXE_SOI_DTD']].copy()
+        df_dcir = df_dcir.rename(columns={
+            'CAM_PRS_IDE': 'CODE',
+            'EXE_SOI_DTD': 'DATE'
+        })
+        df_pmsi = CCAM_PMSI[['BEN_IDT_ANO', 'CDC_ACT', 'EXE_SOI_AMD']].copy()
+        df_pmsi = df_pmsi.rename(columns={
+            'CDC_ACT': 'CODE',
+            'EXE_SOI_AMD': 'DATE'
+        })
+        CCAM_concat = pd.concat([df_dcir, df_pmsi], ignore_index=True)
+        CCAM_concat.sort_values(by=['BEN_IDT_ANO', 'DATE'], inplace=True)
+        df_ccam = CCAM_concat.loc[:, ["BEN_IDT_ANO", "DATE", "CODE"]].copy()
+        df_ccam["COD_CCAM"] = df_ccam["CODE"]
+        df_ccam["COD_ICD10"], df_ccam["COD_CIP"], df_ccam["COD_UCD"] = None, None, None
+        df_ccam = df_ccam[["BEN_IDT_ANO", "DATE", "COD_CCAM", "COD_ICD10", "COD_CIP", "COD_UCD"]]
+
+        # ICD10
+        ICD10_PMSI = self.loc_icd10_pmsi(df_ID_PATIENT, list_ICD10=list_ICD10, print_option=False)
+        df_icd10 = pd.DataFrame({
+            "BEN_IDT_ANO": ICD10_PMSI["BEN_IDT_ANO"],
+            "DATE": ICD10_PMSI["EXE_SOI_AMD"],
+            "COD_CCAM": None,
+            "COD_ICD10": ICD10_PMSI["DGN_PAL"],
+            "COD_CIP": None,
+            "COD_UCD": None
+        })
+
+
+        # UCD
+        UCD_PMSI = self.loc_ucd_pmsi(df_ID_PATIENT, list_UCD=list_UCD, print_option=False)
+        df_ucd = pd.DataFrame({
+            "BEN_IDT_ANO": UCD_PMSI["BEN_IDT_ANO"],
+            "DATE": UCD_PMSI["EXE_SOI_AMD"],
+            "COD_CCAM": None,
+            "COD_ICD10": None,
+            "COD_CIP": None,
+            "COD_UCD": UCD_PMSI["UCD_UCD_COD"]
+        })
+
+
+        # CIP
+        CIP_DCIR = self.loc_cip_dcir(df_ID_PATIENT, list_CIP13=list_CIP13, print_option=False)
+        df_cip = pd.DataFrame({
+            "BEN_IDT_ANO": CIP_DCIR["BEN_IDT_ANO"],
+            "DATE": CIP_DCIR["EXE_SOI_DTD"],
+            "COD_CCAM": None,
+            "COD_ICD10": None,
+            "COD_CIP": CIP_DCIR["PHA_CIP_C13"],
+            "COD_UCD": None
+        })
+
+
+        # Fusion
+        df_final = pd.concat([df_ccam, df_icd10, df_ucd, df_cip], ignore_index=True)
+        df_final = df_final.sort_values(by=["BEN_IDT_ANO", "DATE"]).reset_index(drop=True)
+        df_final.to_pickle(path+'/Bdd.pkl')
