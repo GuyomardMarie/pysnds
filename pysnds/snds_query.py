@@ -78,7 +78,7 @@ class SNDS_Query() :
 
         unique_id = self.dbGetQuery(query_ID_patient)
     
-        print('We have ' + str(unique_id.shape[0]) + ' distinct identifiers, ie. breast cancer feamale patients in the database.')
+        print('We have ' + str(unique_id.shape[0]) + ' distinct identifiers, ie. patients in the database.')
 
         return unique_id
     
@@ -695,3 +695,8 @@ class SNDS_Query() :
         df_final = pd.concat([df_ccam, df_icd10, df_ucd, df_cip], ignore_index=True)
         df_final = df_final.sort_values(by=["BEN_IDT_ANO", "DATE"]).reset_index(drop=True)
         df_final.to_pickle(path+'/Bdd.pkl')
+
+
+
+        
+
