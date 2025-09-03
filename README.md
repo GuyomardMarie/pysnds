@@ -1,4 +1,4 @@
-# pysdns : A Python Package for Exploring the French National Healthcare Database (SNDS)
+# pysnds : A Python package to explore and analyze the French National Healthcare Database (SNDS), with ready-to-use tools for population identification, medical event detection, and treatment characterization
 
 
 The Python package **`pysnds`** simplifies the identification and interpretation of relevant information in the *Système National des Données de Santé*, and therefore the exploitation of this data for research purposes. 
@@ -23,21 +23,10 @@ The package also provides tools to characterize the breast cancer population, wh
 - pkg_resources
 - matplotlib
 
-First download the package using either by downloading or cloning the repository
 ```
 git clone https://github.com/GuyomardMarie/pysnds.git
-```
-
-Then use one of the following command :
-
-```
+cd pysnds
 pip install -e .
-```
-
-or 
-
-```
-ou pip install .
 ```
 
 ---
@@ -112,7 +101,7 @@ It also provides tools to make statistical analyzes and visualization tools.
 
 ## Useful links
 
-- [Documentation du Health DataHub](https://documentation-snds.health-data-hub.fr/snds/tables/)
+- [Health Data Hub Documentation](https://documentation-snds.health-data-hub.fr/snds/tables/)
 - [ICD-10](https://icd.who.int/browse10/2019/en)
 - [CCAM](https://www.ameli.fr/accueil-de-la-ccam/trouver-un-acte/par-code.php)
 - [ATC & CIP13](https://www.vidal.fr/medicaments.html)
@@ -128,7 +117,7 @@ It also provides tools to make statistical analyzes and visualization tools.
 ---
 
 ## Contribute
-Please contact [Marie Guyomard](https://guyomardmarie.github.io/) for reporting any issues or suggest improvements. Collaboration is very welcome, in order to add any functionalities to improve the package and make easier the exploration of the SNDS.
+Contributions, issue reports, and feature suggestions are welcome. Please open an issue or a pull request on GitHub, or contact [Marie Guyomard](https://guyomardmarie.github.io/).
 
 
 
