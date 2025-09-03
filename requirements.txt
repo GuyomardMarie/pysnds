@@ -1,0 +1,6 @@
+pandas
+numpy
+sqlite
+dateutil
+pkg_resources
+matplotlib
