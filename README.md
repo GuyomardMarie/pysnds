@@ -77,7 +77,7 @@ This class inherits from `SNDS_Query`. Given a list of medical codes, it searche
 
 ## Use Example
 
-We provide a complete and reusable example demonstrating the package functionalities on a simulated dataset [1], illustrated through a case study focused on the **female breast cancer population**. The simulated dataset is provided as a 'pre-processed' dataset. Only treatments related to Breast Cancer are reported.
+We provide a complete and [reusable example](https://github.com/GuyomardMarie/Test_Package/tree/main/use_example) demonstrating the package functionalities on a simulated dataset [1], illustrated through a case study focused on the **female breast cancer population**. The simulated dataset is provided as a 'pre-processed' dataset. Only treatments related to Breast Cancer are reported.
 
 As a starting point, we include a comprehensive dictionary of medical codes relevant to breast cancer treatments, extracted from the FRESH study [2]:
 ```
