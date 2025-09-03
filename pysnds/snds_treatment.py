@@ -2,7 +2,7 @@
 Class for detecting the presence of an event in the SNDS for a targeted population and determining its occurrence dates, including the first appearance.
 '''
 
-from snds_query import SNDS_Query
+from .snds_query import SNDS_Query
 import pandas as pd
 import numpy as np
 from datetime import datetime
