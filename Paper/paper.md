@@ -59,7 +59,7 @@ Several studies have demonstrated the relevance of using SNDS data to investigat
 
 The SNDS also proved particularly useful during the COVID-19 pandemic thanks to near real-time access to data, which eliminated the need for time-consuming and costly post-epidemic surveys [@poucineau2022hospital; @semenzato2021antihypertensive].
 
-Beyond disease analysis, the SNDS offers significant potential for identifying determinants of care trajectories and their economic impact. For instance, studies by Poulalhon et al. [2018] and Ossima et al. [2023] on palliative care and end-of-life expenditures highlighted how care pathways significantly influence healthcare costs. These findings underscore the value of medico-administrative data for longitudinal patient monitoring and optimization of care delivery.
+Beyond disease analysis, the SNDS offers significant potential for identifying determinants of care trajectories and their economic impact. For instance, studies by [@poulalhon2018use] and [@ossima2023end] on palliative care and end-of-life expenditures highlighted how care pathways significantly influence healthcare costs. These findings underscore the value of medico-administrative data for longitudinal patient monitoring and optimization of care delivery.
 
 Nevertheless, the medical information within the SNDS is distributed across more than **700 interconnected tables** linked through various join variables.
 
