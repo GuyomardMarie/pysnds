@@ -1,5 +1,5 @@
 ---
-title: 'pysnds: A Python package to explore and analyze the French National Healthcare Database (SNDS), with ready-to-use tools for population identification, medical event detection, and treatment characterization'
+title: 'pysnds: A Python Package for Exploring the French National Healthcare Database (SNDS)'
 tags:
   - Python
   - Système National des Données de Santé
