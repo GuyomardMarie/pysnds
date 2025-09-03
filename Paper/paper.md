@@ -1,5 +1,5 @@
 ---
-title: 'pysnds: A Python Package for Exploring the French National Healthcare Database (SNDS)'
+title: 'pysnds: A Python package to explore and analyze the French National Healthcare Database (SNDS), with ready-to-use tools for population identification, medical event detection, and treatment characterization'
 tags:
   - Python
   - Système National des Données de Santé
@@ -94,7 +94,7 @@ Once the target population is identified, another method, `Get_AGE`, computes th
 
 ### SNDS_Treatment
 
-This class inherits from `SNDS_Query`. Given a list of medical codes, it searches the SNDS to determine whether the identified patients have received specific treatments. It also provides the corresponding dates, including the first date of administration.
+This class inherits from `SNDS_Query`. Given a list of medical codes and optionaly a period of inclusion, it searches the SNDS to determine whether the identified patients have received specific treatments. It also provides the corresponding dates, including the first date of administration.
 
 ---
 
@@ -108,6 +108,9 @@ As a starting point, we include a comprehensive dictionary of medical codes rele
 
 For each treatment type (surgery, chemotherapy, radiotherapy, etc.), the dictionary contains the corresponding medical codes, structured with keys referring to coding systems (`ATC`, `CCAM`, `ICD10`, `UCD`, `CIP13`). This format is supported by the `SNDS_Query` class, which uses the dictionary to identify the relevant SNDS tables.
 
+![Example of Characterization of the Breast Cancer Population using pysnds.](Pop_Desc.png)
+
+
 The class `SNDS_BC`, built on top of the core classes, analyzes the target population. It includes:
 
 - **treatment_setting** – Determines whether a treatment is neoadjuvant (before surgery) or adjuvant (after surgery).
@@ -116,8 +119,6 @@ The class `SNDS_BC`, built on top of the core classes, analyzes the target popul
   - Two unitherapies (Aromatase Inhibitor or Tamoxifen),
   - Four bitherapies (e.g., Tamoxifen followed by Aromatase Inhibitor),
   - One undefined ("Unknown") when the regimen cannot be classified.
-
-![Example of Characterization of the Breast Cancer Population using pysnds.](Characterization_plots.png)
 
 Based on these functionalities, the `BC_POP_Stat` function characterizes each patient by providing:
 
@@ -136,13 +137,13 @@ Additional functions:
 - **statistical_analyses** – Enables subgroup analyses (e.g., by age or treatment pathway).
 - **vizualisation_pop** – Generates plots summarizing population characteristics.
 
-Although tailored to breast cancer, these tools can be adapted to other pathologies by users.
+Although tailored to breast cancer, these tools can be adapted to other pathologies by users. A complete example of use of the whole functionalities is provided with the package.
 
 ---
 
-## Conclusion
+## Conclusion and Perspectives
 
-*TODO: Dire que c'est généralisable sur R et à d'autres types de maladies par les utilisateurs.*
+The provided package allows SNDS users to efficiently access relevant medical information within this complex database architecture. Developed in `Python` for compatibility with the Health Data Hub platform, it can also be adapted to `R` to extend its use to the CNAM platform. While the illustrative example focuses on breast cancer, the approach can be readily applied to other pathologies, provided that the corresponding treatment dictionaries are available. Contributions and collaborations are highly encouraged to further enrich the package, enhance its functionalities, and facilitate the exploration of the SNDS.
 
 ---
 
