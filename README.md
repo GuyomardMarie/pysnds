@@ -110,6 +110,16 @@ It also provides tools to make statistical analyzes and visualization tools.
 
 ---
 
+## Useful links
+
+- [Documentation du Health DataHub](https://documentation-snds.health-data-hub.fr/snds/tables/)
+- [ICD-10](https://icd.who.int/browse10/2019/en)
+- [CCAM](https://www.ameli.fr/accueil-de-la-ccam/trouver-un-acte/par-code.php)
+- [ATC & CIP13](https://www.vidal.fr/medicaments.html)
+
+
+---
+
 ## References
 [1] https://zenodo.org/records/15804909?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjQ0OTNlNTkxLWI1YzItNDBhMy04ZjkxLTVkMDc5ODdkMjE2ZCIsImRhdGEiOnt9LCJyYW5kb20iOiIxMGIzMGNhOGE5MDVmNjVhMGU4YjdjYTk1ZmFiMjg3MiJ9._A1LVcH0HRNvKv9MVxV5Q8cgcb1QF1dgNCUBxnm8a-Psx11CnKQ4-XYULeLw1P0HttnPzzFWs4DJa7Wiefs6bA
 
