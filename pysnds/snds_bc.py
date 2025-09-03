@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 
 class SNDS_BC(SNDS_Treatment) :
@@ -24,10 +25,10 @@ class SNDS_BC(SNDS_Treatment) :
             self.BC_medical_codes = json.load(file)
 
         self.SNDS_query = SNDS_Query(self.conn)
-        self.SNDS_Treatment = SNDS_Treatment(self.conn, self.df_ID_PATIENT)
+        self.SNDS_Treatment = SNDS_Treatment(self.conn)
 
 
-    def treatment_setting(self, dict_treatment):
+    def treatment_setting(self, dict_treatment,  years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False):
         '''
         Method to determine the setting of a treatment : neoadjuvant (before the surgery) or adjuvant (after the surgery).
 
@@ -36,20 +37,24 @@ class SNDS_BC(SNDS_Treatment) :
         dict_treatment : dict
             Dictionary of codes referring to the treatment of interest. Each key represents a code type 
             (possible keys: {'CCAM', 'CIP13', 'UCD', 'ICD10'}) and maps to a list of corresponding codes.
+        years : list, optional
+            List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+            If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
 
         Returns
         -------
         df_treatment_setting : DataFrame
             DataFrame containing the event response ('Setting') for each patient in the targeted population ('BEN_IDT_ANO'). 
-            The values taken by the variable are 'No' (for no surgery), 'Neoadjuvant' or 'Adjuvant'.
+            The values taken by the variable are 'No', 'Neoadjuvant' or 'Adjuvant'.
         '''
         
         if type(dict_treatment) != dict :
             raise ValueError("dict_treatment must be a dictionnary with keys 'CCAM', 'CIP13', 'UCD' and/or 'ICD10'.")
 
         # Compute first date of treatment
-        surgery_date = self.first_date_treatment(self.BC_medical_codes['Surgery_BC']['Surgery'])
-        treatment_date = self.first_date_treatment(dict_treatment)
+        surgery_date = self.first_date_treatment(dict_code=self.BC_medical_codes['Surgery_BC']['Surgery'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
+        treatment_date = self.first_date_treatment(dict_code=dict_treatment, df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
 
         merged = pd.merge(treatment_date[['BEN_IDT_ANO', 'DATE']], 
                         surgery_date[['BEN_IDT_ANO', 'DATE']], 
@@ -73,7 +78,7 @@ class SNDS_BC(SNDS_Treatment) :
 
 
 
-    def Chemotherapy_Regimen(self) :
+    def Chemotherapy_Regimen(self, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False) :
         '''
         Method to determine the regimen of Chemotherapy
 
@@ -82,11 +87,21 @@ class SNDS_BC(SNDS_Treatment) :
         df_res : DataFrame
             DataFrame containing the event response ('Regimen') for each patient in the targeted population ('BEN_IDT_ANO'). 
             The values taken by the variable are 'No' (for No Chemotherapy), 'Unitherapy' and 'Bitherapy'. 
+        years : list, optional
+            List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+            If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
+        
+        Returns
+        -------
+        df_res : DataFrame
+            DataFrame containing the event response ('CT_Regimen') for each patient in the targeted population ('BEN_IDT_ANO'). 
+            The values taken by the variable are 'No', 'Unitherapy' or 'Bitherapy'.
         '''
 
-        df_chemotherapy = self.Had_Treatment(self.BC_medical_codes['CT'], print_option=False)
+        df_chemotherapy = self.Had_Treatment(self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
         df_res = df_chemotherapy.copy()
-        df_CT = self.treatment_dates(self.BC_medical_codes['CT'])
+        df_CT = self.treatment_dates(dict_code=self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
         df_res['CT_Regimen'] = np.nan
         df_CT['DATE'] = pd.to_datetime(df_CT['DATE'])
 
@@ -165,23 +180,26 @@ class SNDS_BC(SNDS_Treatment) :
 
 
 
-    def EndoctrineTherapy_Treatment(self) : 
+    def EndoctrineTherapy_Treatment(self, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False) : 
         '''
         Method to determine the regimen of Endoctrine Therapy.
-
+        years : list, optional
+            List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+            If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
+        
         Returns
         -------
         df_res : DataFrame
-            DataFrame containing the event response ('Regimen') for each patient in the targeted population ('BEN_IDT_ANO'). 
+            DataFrame containing the event response ('ET_Regimen') for each patient in the targeted population ('BEN_IDT_ANO'). 
             The values taken by the variable are 'No' (for No Endoctrine Therapy), 'Tamoxifen', 'AI', 'Tamoxifen with Agonist', 'AI with Agonist', 'Tamoxifen followed by AI', 'AI followed by Tamoxifen'.
         '''
-    
 
-        df_endoctrine_therapy = self.Had_Treatment(self.BC_medical_codes['ET']['All'], print_option=False)
+        df_endoctrine_therapy = self.Had_Treatment(self.BC_medical_codes['ET']['All'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
         df_res = df_endoctrine_therapy.copy()
         df_res.loc[df_res['BEN_IDT_ANO'].isin(df_endoctrine_therapy[df_endoctrine_therapy.Response==0].BEN_IDT_ANO), 'ET_Regimen'] = 'No ET'
 
-        df_ET = self.treatment_dates(self.BC_medical_codes['ET']['All'])
+        df_ET = self.treatment_dates(self.BC_medical_codes['ET']['All'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
         df_ET['DATE'] = pd.to_datetime(df_ET['DATE'])
         df_ET['COD_CIP'] = df_ET['COD_CIP'].astype(str)
         df_ET = df_ET.sort_values(by=['BEN_IDT_ANO', 'DATE'])
@@ -221,6 +239,7 @@ class SNDS_BC(SNDS_Treatment) :
                 return 'Unknown'
 
 
+        #df_ET_Regimen = (df_ET.groupby('BEN_IDT_ANO').apply(determine_ET_treatment).reset_index().rename(columns={0: "Regimen"}))
         df_ET_Regimen = df_ET.groupby('BEN_IDT_ANO').apply(determine_ET_treatment).reset_index(name='Regimen')
         df_res = df_res.merge(df_ET_Regimen[['BEN_IDT_ANO', 'Regimen']], on='BEN_IDT_ANO', how='outer')
         df_res['ET_Treatment'] = df_res['ET_Regimen'].fillna(df_res['Regimen'])
@@ -229,10 +248,14 @@ class SNDS_BC(SNDS_Treatment) :
         return df_res
     
     
-    def BC_POP_Stat(self) :
+    def BC_POP_Stat(self, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False) :
         '''
         Method to characterize the Breast Cancer Population.
-
+        years : list, optional
+            List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+            If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
+        
         Returns
         -------
         df : DataFrame
@@ -259,25 +282,25 @@ class SNDS_BC(SNDS_Treatment) :
                 - 'ET' : No : '0' / Yes : '1'
                 - 'ET_Setting' : 'No', 'Neoadjuvant' or 'Adjuvant'
                 - 'ET_Treatment' : 'No', 'Tamoxifen', 'AI', 'Tamoxifen with Agonist', 'AI with Agonist', 'Tamoxifen followed by AI', 'AI followed by Tamoxifen'
-                 - 'ET_Regimen' : 'No', 'Unitherapy' or 'Bitherapy'
+                - 'ET_Regimen' : 'No', 'Unitherapy' or 'Bitherapy'
         '''
 
         df = pd.DataFrame({'ID_PATIENT' : self.df_ID_PATIENT['BEN_IDT_ANO']})
 
         ### Age
-        df = pd.merge(df, self.Get_AGE(self.df_ID_PATIENT), left_on='ID_PATIENT', right_on='BEN_IDT_ANO', how='left')
+        df = pd.merge(df, self.Get_AGE(df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev), left_on='ID_PATIENT', right_on='BEN_IDT_ANO', how='left')
         df.drop(columns=['BEN_IDT_ANO'], inplace=True)
 
         ### Nodal Status
-        df['Nodal_Status'] = self.Had_Treatment(self.BC_medical_codes['Diag_NodalStatus'], print_option=False)['Response']
+        df['Nodal_Status'] = self.Had_Treatment(self.BC_medical_codes['Diag_NodalStatus'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
 
 
         ### Surgery
         # Mastectomy
-        df['Mastectomy'] = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Mastectomy'], print_option=False)['Response']
+        df['Mastectomy'] = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Mastectomy'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
 
         # Partial Mastectomy
-        df['Partial_Mastectomy'] = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Partial_Mastectomy'], print_option=False)['Response']
+        df['Partial_Mastectomy'] = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Partial_Mastectomy'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
 
         # Surgery
         df['Surgery'] = ((df['Mastectomy'] == 1) | (df['Partial_Mastectomy'] == 1)).astype(int)
@@ -285,40 +308,40 @@ class SNDS_BC(SNDS_Treatment) :
 
         ### Chemotherapy
         # Yes / No
-        df['CT'] = self.Had_Treatment(self.BC_medical_codes['CT'], print_option=False)['Response']
+        df['CT'] = self.Had_Treatment(self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
 
         # Setting
-        df['CT_Setting'] = self.treatment_setting(self.BC_medical_codes['CT'])['Setting']
+        df['CT_Setting'] = self.treatment_setting(self.BC_medical_codes['CT'], years=years, dev=dev)['Setting']
 
         # Regimen
-        df['CT_Regimen'] = self.Chemotherapy_Regimen()['CT_Regimen']
+        df['CT_Regimen'] = self.Chemotherapy_Regimen(years=years, dev=dev)['CT_Regimen']
 
 
         ### Radiotherapy
         # Yes / No
-        df['RT'] = self.Had_Treatment(self.BC_medical_codes['RT'], print_option=False)['Response']
+        df['RT'] = self.Had_Treatment(self.BC_medical_codes['RT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
 
         # Setting
-        df['RT_Setting'] = self.treatment_setting(self.BC_medical_codes['RT'])['Setting']
+        df['RT_Setting'] = self.treatment_setting(self.BC_medical_codes['RT'], years=years, dev=dev)['Setting']
 
 
         ### TT
         # Yes / No
-        df['TT'] = self.Had_Treatment(self.BC_medical_codes['TT']['Pertuzumab'], print_option=False)['Response']
+        df['TT'] = self.Had_Treatment(self.BC_medical_codes['TT']['Pertuzumab'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
         
         # Setting
-        df['TT_Setting'] = self.treatment_setting(self.BC_medical_codes['TT']['Pertuzumab'])['Setting']
+        df['TT_Setting'] = self.treatment_setting(self.BC_medical_codes['TT']['Pertuzumab'], years=years, dev=dev)['Setting']
 
         
         ### ET
         # Yes / No
-        df['ET'] = self.Had_Treatment(self.BC_medical_codes['ET']['All'], print_option=False)['Response']
+        df['ET'] = self.Had_Treatment(self.BC_medical_codes['ET']['All'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
 
         # Setting
-        df['ET_Setting'] = self.treatment_setting(self.BC_medical_codes['ET']['All'])['Setting']
+        df['ET_Setting'] = self.treatment_setting(self.BC_medical_codes['ET']['All'], years=years, dev=dev)['Setting']
 
         # Treatment
-        df['ET_Treatment'] = self.EndoctrineTherapy_Treatment()['ET_Treatment']
+        df['ET_Treatment'] = self.EndoctrineTherapy_Treatment(years=years, dev=dev)['ET_Treatment']
 
         # Regimen
         df['ET_Regimen'] = np.select([df['ET_Treatment'].isin(['AI', 'Tamoxifen']),
@@ -380,7 +403,7 @@ class SNDS_BC(SNDS_Treatment) :
         return df_pathway
     
 
-    def BC_subtype(self, df_char=None):
+    def BC_subtype(self, df_char):
         '''
         Method to determine the Breast Cancer Subtype for each patient.
 
@@ -395,17 +418,17 @@ class SNDS_BC(SNDS_Treatment) :
             Subtype of Breast Cancer for each patient : 'HER2', 'Luminal', 'TNBC' or' 'Unknown'.
         '''
 
-        if df_char is None:
-            df_char = self.BC_POP_Stat()
-
         def def_BC_type(pathway):
             # HER2
             if ((pathway.TT==1)).all():
                 return 'HER2'
+            # Luminal
             if ((pathway.ET==1) & (pathway.TT==0)).all():
                 return 'Luminal'
+            # TNBC
             if ((pathway.CT==1) & (pathway.ET==0) & (pathway.TT==0)).all():
                 return 'TNBC'
+            # Unknown
             else :
                 return 'Unknown'
         
@@ -414,7 +437,7 @@ class SNDS_BC(SNDS_Treatment) :
         return df_subtype
 
 
-    def statistical_analyses(self, df_final = None, save_option=True, pathway=True, age_range=True, path='') :
+    def statistical_analyses(self, df_final=None, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False, save_option=True, pathway=True, age_range=True, path='') :
         '''
         Method to make a statistical analysis of the breast cancer population.
 
@@ -426,6 +449,10 @@ class SNDS_BC(SNDS_Treatment) :
                 - df_pathway resulting from therapeutic_pathway()
                 - df_subtype resulting from BC_subtype()
             If None it will be done directly in this method. Default is None.
+        years : list, optional
+            List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+            If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
         save_option : bool, optional
             If True, saves the resulting dataframe in excel format. Default is True.
         pathway : bool, optional
@@ -451,7 +478,7 @@ class SNDS_BC(SNDS_Treatment) :
         
         # Final characterization of the Breast Cancer population
         if df_final is None :
-            df_char = self.BC_POP_Stat()
+            df_char = self.BC_POP_Stat(years=years, dev=dev)
             df_pathway = self.therapeutic_pathway(df_char)
             df_subtype = self.BC_subtype(df_char)
             df_final = df_char.set_index('ID_PATIENT').join([df_pathway.set_index('ID_PATIENT'), df_subtype.set_index('ID_PATIENT')], how='inner').reset_index()
@@ -632,10 +659,11 @@ class SNDS_BC(SNDS_Treatment) :
                         sheet_name = f"Pathway_{pathway}_{category}"
                         sub_df.to_excel(writer, sheet_name=sheet_name)
 
+            return stat_pathway_age
 
 
 
-    def vizualisation_pop(self, var_x, var_y, df_final=None, ax=None): 
+    def vizualisation_pop(self, var_x, var_y, df_final=None, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False, ax=None): 
         '''
         Method to determine the visualize the distributions of the breast cancer population.
 
@@ -651,13 +679,17 @@ class SNDS_BC(SNDS_Treatment) :
             Name of the column in df_final for x axis.
         var_y : str
             Name of the column in df_final for y axis.
+        years : list, optional
+            List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+            If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
         ax : ax subplots, optional
             Axis where to plot the figure in a subplot.
         '''
 
         # Final characterization of the Breast Cancer population
         if df_final is None :
-            df_char = self.BC_POP_Stat()
+            df_char = self.BC_POP_Stat(years=years, dev=dev)
             df_pathway = self.therapeutic_pathway(df_char)
             df_subtype = self.BC_subtype(df_char)
             df_final = df_char.set_index('ID_PATIENT').join([df_pathway.set_index('ID_PATIENT'), df_subtype.set_index('ID_PATIENT')], how='inner').reset_index()
@@ -711,4 +743,5 @@ class SNDS_BC(SNDS_Treatment) :
             plt.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), ncol=len(labels), fontsize=12)
             plt.tight_layout()
             plt.show()
+
 
