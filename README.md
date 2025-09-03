@@ -6,7 +6,7 @@ git clone https://github.com/GuyomardMarie/Test_Package.git
 
 
 
-cd snds_pop 
+cd pysnds
 
 
 pip install -e .
