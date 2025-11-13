@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 
 class SNDS_BC(SNDS_Treatment) :
@@ -19,6 +20,32 @@ class SNDS_BC(SNDS_Treatment) :
             raise ValueError(f"df_ID_PATIENT must at least contain the following columns : BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_GEM")
 
         self.conn = conn
+        
+        spark_session_type = None
+        if "pyspark" in str(type(conn)): 
+            try:
+                from pyspark.sql import SparkSession
+                spark_session_type = SparkSession
+            except ImportError:
+                raise ImportError("PySpark n'est pas installé, impossible d'utiliser Spark.")
+
+        # Spark
+        if spark_session_type is not None and isinstance(conn, spark_session_type):
+            self.conn = conn
+            self.backend = "spark"
+
+        # Sqlite
+        elif isinstance(conn, sqlite3.Connection):
+            self.conn = conn
+            self.backend = "sqlite"
+
+        else:
+            raise TypeError(
+                f"Paramètre conn invalide : {type(conn)}. "
+                f"Attendu SparkSession ou sqlite3.Connection."
+            )
+            
+            
         self.df_ID_PATIENT = df_ID_PATIENT
         json_path = pkg_resources.resource_filename(__name__, 'BC_medical_codes.json')
         with open(json_path, 'r') as file:
@@ -28,6 +55,373 @@ class SNDS_BC(SNDS_Treatment) :
         self.SNDS_Treatment = SNDS_Treatment(self.conn)
 
 
+    def Get_ID(self):
+        '''
+        Method for collecting unique identifiers of the population in IR_BEN_R.
+
+        Returns
+        -------
+        df : DataFrame
+            DataFrame containing the unique identifier of the population in a column named 'BEN_IDT_ANO'.
+        '''
+
+        query_ID_patient =  """
+            SELECT DISTINCT
+            A.BEN_IDT_ANO,
+            A.BEN_NIR_PSA, 
+            A.BEN_RNG_GEM
+            FROM IR_BEN_R A
+
+        """
+
+        unique_id = self.GetQuery(query_ID_patient)
+    
+        print('We have ' + str(unique_id.shape[0]) + ' distinct identifiers, ie. patients in the database.')
+
+        return unique_id
+    
+    
+    
+    def Date_Diag(self, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False):   
+        '''
+        Method for identifying the date of diagnosis.
+
+        Parameters
+        ----------
+        years : list
+        List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+        If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
+
+        Returns
+        -------
+        df_dates_diag : DataFrame
+        DataFrame containing the date of diagnosis (column Date_Diag) for each patient (BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_REM).
+        '''
+    
+        if (years is None) or (not isinstance(years, list)):
+            raise ValueError("`years` must be a list containing the start and end dates, either as integers (years) or as datetime objects (e.g., datetime(yyyy, mm, dd)).")
+
+        # Init
+        df_dates_diag = self.df_ID_PATIENT.copy()
+        df_dates_diag["BEN_RNG_GEM"] = df_dates_diag["BEN_RNG_GEM"].astype(int)
+        df_dates_diag['Date_Diag'] = np.nan
+
+        # First Treatment date
+        df_first_treatment = self.first_date_treatment(self.BC_medical_codes['All_BC_Codes'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
+
+        # Biopsy
+        df_dates_diag_subset = df_dates_diag[df_dates_diag["Date_Diag"].isna()][['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']].reset_index(drop=True)
+        df_ccam_dcir_biopsy = self.loc_ccam_dcir(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_core_biopsy']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False)
+        df_ccam_pmsi_biopsy = self.loc_ccam_pmsi(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_core_biopsy']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False, dev=False)
+        df_ccam_biopsy = pd.concat([df_ccam_dcir_biopsy[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']], df_ccam_pmsi_biopsy[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']]]).drop_duplicates().reset_index(drop=True)
+
+        df_merged_biopsy = df_ccam_biopsy.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_biopsy", "_df_first_treatment"))
+        df_filtered_biopsy = df_merged_biopsy[
+        (df_merged_biopsy["EXE_SOI_DTD"] > df_merged_biopsy["DATE"] - pd.DateOffset(years=1)) &
+        (df_merged_biopsy["EXE_SOI_DTD"] < df_merged_biopsy["DATE"])
+        ]
+        df_result_biopsy = df_filtered_biopsy.groupby(["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], as_index=False).agg(DATE=("EXE_SOI_DTD","min"))
+        df_result_biopsy["BEN_RNG_GEM"] = df_result_biopsy["BEN_RNG_GEM"].astype(int)
+
+        df_merged = df_dates_diag.merge(df_result_biopsy, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
+        df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
+        df_dates_diag = df_merged.drop(columns="DATE")
+        
+        # Fine-needle aspiration cytology
+        df_dates_diag_subset = df_dates_diag[df_dates_diag["Date_Diag"].isna()][['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']].reset_index(drop=True)
+
+        if df_dates_diag_subset.shape[0]!=0 :
+            df_ccam_dcir_cytology = self.loc_ccam_dcir(list_CCAM=self.BC_medical_codes['Diag_Proc']['Fine_needle_aspiration_cytology']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False)
+            df_ccam_pmsi_cytology = self.loc_ccam_pmsi(list_CCAM=self.BC_medical_codes['Diag_Proc']['Fine_needle_aspiration_cytology']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False, dev=dev)
+            df_ccam_cytology = pd.concat([df_ccam_dcir_cytology[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']], df_ccam_pmsi_cytology[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']]]).drop_duplicates().reset_index(drop=True)
+
+            df_merged_cytology = df_ccam_cytology.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_biopsy", "_df_first_treatment"))
+            df_filtered_cytology = df_merged_cytology[
+            (df_merged_cytology["EXE_SOI_DTD"] > df_merged_cytology["DATE"] - pd.DateOffset(years=1)) &
+            (df_merged_cytology["EXE_SOI_DTD"] < df_merged_cytology["DATE"])
+            ]
+            df_result_cytology = df_filtered_cytology.groupby(["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], as_index=False).agg(DATE=("EXE_SOI_DTD","min"))
+            df_result_cytology["BEN_RNG_GEM"] = df_result_cytology["BEN_RNG_GEM"].astype(int)
+            
+            df_merged = df_dates_diag.merge(df_result_cytology, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
+            df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
+            df_dates_diag = df_merged.drop(columns="DATE")
+            
+        # Breast Imaging Procedure
+        df_dates_diag_subset = df_dates_diag[df_dates_diag["Date_Diag"].isna()][['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']].reset_index(drop=True)
+
+        if df_dates_diag_subset.shape[0]!=0 : 
+
+            df_ccam_dcir_imagery = self.loc_ccam_dcir(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_Imaging_Procedures']['All']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False)
+            df_ccam_pmsi_imagery = self.loc_ccam_pmsi(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_Imaging_Procedures']['All']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False, dev=dev)
+            df_ccam_imagery = pd.concat([df_ccam_dcir_imagery[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']], df_ccam_pmsi_imagery[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']]]).drop_duplicates().reset_index(drop=True)
+            df_ccam_imagery["EXE_SOI_DTD"] = pd.to_datetime(df_ccam_imagery["EXE_SOI_DTD"], errors="coerce")
+            df_ccam_imagery["BEN_RNG_GEM"] = df_ccam_imagery["BEN_RNG_GEM"].astype(int)
+            df_first_treatment["BEN_RNG_GEM"] = df_first_treatment["BEN_RNG_GEM"].astype(int)
+            
+            df_merged_imagery = df_ccam_imagery.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_imagery", "_df_first_treatment"))
+            df_filtered_imagery = df_merged_imagery[(df_merged_imagery["EXE_SOI_DTD"] < df_merged_imagery["DATE"])]
+
+            def select_imagery_date_diag(group):
+                group = group.sort_values("EXE_SOI_DTD", ascending=False).reset_index(drop=True)
+                current = group.loc[0, "EXE_SOI_DTD"]
+
+                for d in group["EXE_SOI_DTD"][1:]:
+                    if d > (current - relativedelta(months=1)):
+                        current = d  
+                    else:
+                        break        
+
+                return current
+
+            df_result_imagery = df_filtered_imagery.groupby(["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"]).apply(select_imagery_date_diag)
+            df_result_imagery = df_result_imagery.reset_index(name="DATE")
+            df_result_imagery["BEN_RNG_GEM"] = df_result_imagery["BEN_RNG_GEM"].astype(int)
+            
+            df_merged = df_dates_diag.merge(df_result_imagery, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
+            df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
+            df_dates_diag = df_merged.drop(columns="DATE")
+
+        # First treatment date
+        df_dates_diag_subset = df_dates_diag[df_dates_diag["Date_Diag"].isna()][['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']].reset_index(drop=True)
+
+        if df_dates_diag_subset.shape[0]!=0 : 
+
+            df_dates_diag_subset["BEN_RNG_GEM"] = df_dates_diag_subset["BEN_RNG_GEM"].astype(int)
+            df_first_treatment["BEN_RNG_GEM"] = df_first_treatment["BEN_RNG_GEM"].astype(int)
+
+            df_first_date = df_dates_diag_subset.merge(
+            df_first_treatment[["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM","DATE"]],
+            on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"],
+            how="left"
+            )
+            df_first_date["BEN_RNG_GEM"] = df_first_date["BEN_RNG_GEM"].astype(int)
+            
+            df_merged = df_dates_diag.merge(df_first_date, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
+            df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
+            df_dates_diag = df_merged.drop(columns="DATE")
+            
+        return df_dates_diag
+
+
+    def Get_AGE(self, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False):
+        '''
+        Method for collecting the population's age at the time of enrollment.
+
+        Parameters
+        ----------
+        years : list
+        List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+        If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
+
+        Returns
+        -------
+        df_age : DataFrame
+        DataFrame containing the age at the time of enrollment (column DATE_DIAG) for each patient (BEN_IDT_ANO).
+        '''
+
+        liste_benidtano_str = ', '.join(f"'{valeur}'" for valeur in np.unique(self.df_ID_PATIENT.BEN_IDT_ANO))
+        liste_bennirpsa_str = ', '.join(f"'{valeur}'" for valeur in np.unique(self.df_ID_PATIENT.BEN_NIR_PSA))
+
+        if (years is None) or (not isinstance(years, list)):
+            raise ValueError("`years` must be a list containing the start and end dates, either as integers (years) or as datetime objects (e.g., datetime(yyyy, mm, dd)).")
+
+        if isinstance(years[0], datetime):
+            flxmin_year = years[0].year
+            year_deb = int(str(years[0].year)[-2:])
+            deb = years[0]
+        else:
+            flxmin_year = years[0]
+            year_deb = str(years[0])[-2:]
+            deb = datetime(years[0], 1, 1)
+
+        if isinstance(years[1], datetime):
+            end = years[1]
+            year_end = int(str(years[1].year)[-2:])
+            flxmax_year = years[1].year
+        else:
+            end = datetime(years[1], 12, 31)
+            year_end = str(years[1])[-2:]
+            flxmax_year = years[1]
+
+        flxmin = datetime(flxmin_year, 1, 1)
+        flxmax_date = (end + relativedelta(months=6)).replace(day=1)
+        vecflx = []
+        current_date = flxmin
+        while current_date <= flxmax_date:
+            vecflx.append(current_date.strftime("%Y-%m-%d"))
+            current_date += relativedelta(months=1)
+
+        top_ER_PRS_F = True
+
+        if self.backend == 'sqlite':
+            cursor = self.conn.cursor()
+            cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
+            ('E_PRS_F',)
+            )
+            top_ER_PRS_F = cursor.fetchone() is not None
+
+        if self.backend == 'spark':
+            top_ER_PRS_F = self.conn.catalog.tableExists('ER_PRS_F')
+
+
+        # DCIR
+        age_dcir = pd.DataFrame(columns=['BEN_NIR_PSA', 'BEN_RNG_GEM', 'BEN_IDT_ANO', 'EXE_SOI_DTD', 'BEN_AMA_COD'])
+
+        if top_ER_PRS_F==True :
+
+            for flux in vecflx:
+                query_AGE_DCIR = f"""
+
+                    SELECT  
+                    A.BEN_NIR_PSA,      
+                    A.BEN_RNG_GEM,
+                    B.BEN_IDT_ANO,  
+                    A.EXE_SOI_DTD,
+                    A.BEN_AMA_COD
+                    FROM ER_PRS_F A
+
+                    INNER JOIN IR_BEN_R B
+                    ON B.BEN_NIR_PSA = A.BEN_NIR_PSA AND B.BEN_RNG_GEM = A.BEN_RNG_GEM
+
+                    WHERE A.FLX_DIS_DTD = '{flux}' AND B.BEN_IDT_ANO IN ({liste_benidtano_str}) AND B.BEN_NIR_PSA IN ({liste_bennirpsa_str})
+                """
+                df_flux = self.GetQuery(query_AGE_DCIR)
+                age_dcir = pd.concat([age_dcir, df_flux], ignore_index=True)
+                age_dcir['EXE_SOI_DTD'] = pd.to_datetime(age_dcir['EXE_SOI_DTD']) 
+                age_dcir.drop_duplicates(inplace=True)
+
+        else :
+            yy = list(range(int(flxmin_year), (int(flxmax_year)+1)))
+
+            for year in yy :
+
+                query_AGE_DCIR = f"""
+
+                    SELECT 
+                    A.BEN_NIR_PSA,      
+                    A.BEN_RNG_GEM,
+                    B.BEN_IDT_ANO,  
+                    A.EXE_SOI_DTD,
+                    A.BEN_AMA_COD
+                    FROM ER_PRS_F_{year} A
+
+                    INNER JOIN IR_BEN_R B
+                    ON B.BEN_NIR_PSA = A.BEN_NIR_PSA AND B.BEN_RNG_GEM = A.BEN_RNG_GEM
+
+                    WHERE B.BEN_IDT_ANO IN ({liste_benidtano_str}) AND B.BEN_NIR_PSA IN ({liste_bennirpsa_str})
+                """
+                df_flux = self.GetQuery(query_AGE_DCIR)
+                age_dcir = pd.concat([age_dcir, df_flux], ignore_index=True)
+                age_dcir['EXE_SOI_DTD'] = pd.to_datetime(age_dcir['EXE_SOI_DTD']) 
+                age_dcir.drop_duplicates(inplace=True)
+
+        # PMSI
+        age_pmsi = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD', 'AGE_ANN'])
+
+        if dev==True:
+            query_AGE_PMSI = f"""
+
+                SELECT DISTINCT
+                C.BEN_IDT_ANO, 
+                C.BEN_RNG_GEM, 
+                C.BEN_NIR_PSA, 
+                A.EXE_SOI_DTD, 
+                B.AGE_ANN
+                FROM T_MCOaaC A
+
+                INNER JOIN T_MCOaaB B
+                ON A.ETA_NUM = B.ETA_NUM AND A.RSA_NUM = B.RSA_NUM
+
+                INNER JOIN IR_BEN_R C
+                ON A.NIR_ANO_17 = C.BEN_NIR_PSA
+
+                WHERE C.BEN_IDT_ANO IN ({liste_benidtano_str}) AND C.BEN_NIR_PSA IN ({liste_bennirpsa_str})
+            """
+            age_pmsi = self.GetQuery(query_AGE_PMSI)
+            age_pmsi['EXE_SOI_DTD'] = pd.to_datetime(age_pmsi['EXE_SOI_DTD'])  
+            age_pmsi.drop_duplicates(inplace=True)
+
+        else :
+            yy = list(range(int(year_deb), int(year_end)+1))
+
+            for year in yy :
+                table_nameB = f"T_MCO{year}B"
+                table_nameC = f"T_MCO{year}C"
+                query_AGE_PMSI = f"""
+
+                    SELECT DISTINCT
+                    C.BEN_IDT_ANO, 
+                    C.BEN_RNG_GEM, 
+                    C.BEN_NIR_PSA,  
+                    A.EXE_SOI_DTD, 
+                    B.AGE_ANN
+                    FROM {table_nameC} A
+
+                    INNER JOIN {table_nameB} B
+                    ON A.ETA_NUM = B.ETA_NUM AND A.RSA_NUM = B.RSA_NUM
+
+                    INNER JOIN IR_BEN_R C
+                    ON A.NIR_ANO_17 = C.BEN_NIR_PSA
+
+                    WHERE C.BEN_IDT_ANO IN ({liste_benidtano_str}) AND C.BEN_NIR_PSA IN ({liste_bennirpsa_str})
+                """
+                df_flux = self.GetQuery(query_AGE_PMSI)
+                age_pmsi = pd.concat([age_pmsi, df_flux], ignore_index=True)
+                age_pmsi['EXE_SOI_DTD'] = pd.to_datetime(age_pmsi['EXE_SOI_DTD'])  
+                age_pmsi.drop_duplicates(inplace=True)
+
+        # AGE
+        age_pmsi = age_pmsi.rename(columns={'AGE_ANN': 'AGE'})
+        age_dcir = age_dcir.rename(columns={'BEN_AMA_COD': 'AGE'})
+
+        cols = ['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'AGE']
+        df_age = pd.concat([age_dcir[cols], age_pmsi[cols]], ignore_index=True)
+        df_age.drop_duplicates(inplace=True)
+        df_age.sort_values(['BEN_IDT_ANO', 'AGE'])
+        df_age.reset_index(drop=True, inplace=True)
+
+        return df_age
+
+    
+    def Age_Diagnosis(self, years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False):   
+        '''
+        Method for identifying the date of diagnosis and the age at this time.
+
+        Parameters
+        ----------
+        years : list
+        List of dates (either years as integers or datetime(yyyy, mm, dd)) defining the period during which to search for CCAM codes. By default 1st of January 2020 and 31 of December 2020.
+        dev : bool, optional
+        If True, this indicates that the study is performed on a simulated dataset, in which the PMSI does not have any tables referring to specific years. Default is False.
+
+        Returns
+        -------
+        df_diag : DataFrame
+        DataFrame containing the date of diagnosis (column Date_Diag) and the age (AGE) for each patient (BEN_IDT_ANO, BEN_NIR_PSA, BEN_RNG_REM).
+        '''
+
+        df_date_diag = self.Date_Diag(years=years, dev=dev)
+        df_date_diag["BEN_RNG_GEM"] = df_date_diag["BEN_RNG_GEM"].astype(int)
+
+        df_age_diag = self.Get_AGE(years=years, dev=dev)
+        df_age_diag["BEN_RNG_GEM"] = df_age_diag["BEN_RNG_GEM"].astype(int)
+
+        df_diag = df_age_diag.merge(df_date_diag, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
+        df_diag = df_diag[df_diag.EXE_SOI_DTD==df_diag.Date_Diag]
+        df_diag.drop(['EXE_SOI_DTD'], axis=1, inplace=True)
+        df_diag["AGE"] = df_diag["AGE"].astype(int)
+        df_diag["Date_Diag"] = pd.to_datetime(df_diag["Date_Diag"], errors="coerce")
+        
+        return df_diag
+
+
+    
+    
+    
     def treatment_setting(self, dict_treatment,  years=[datetime(2020, 1, 1), datetime(2020, 12, 31)], dev=False):
         '''
         Method to determine the setting of a treatment : neoadjuvant (before the surgery) or adjuvant (after the surgery).
@@ -63,7 +457,7 @@ class SNDS_BC(SNDS_Treatment) :
                         suffixes=('_treatment', '_surgery'))
 
         # No Surgery
-        merged['Setting'] = 0
+        merged['Setting'] = '0'
         merged.loc[merged['DATE_surgery'].isna(), 'Setting'] = 'Neoadjuvant'
         # Neoadjuvant
         merged.loc[np.where(merged['DATE_treatment'] <= merged['DATE_surgery'])[0], 'Setting'] = 'Neoadjuvant'
@@ -103,6 +497,7 @@ class SNDS_BC(SNDS_Treatment) :
         df_res = df_chemotherapy.copy()
         df_CT = self.treatment_dates(dict_code=self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
         df_res['CT_Regimen'] = np.nan
+        df_res["CT_Regimen"] = df_res["CT_Regimen"].astype(str)
         df_CT['DATE'] = pd.to_datetime(df_CT['DATE'])
 
         df_CT = df_CT.groupby(['BEN_IDT_ANO', 'DATE'], as_index=False).agg({
