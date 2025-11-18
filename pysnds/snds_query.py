@@ -178,13 +178,13 @@ class SNDS_Query() :
 
         top_ER_PRS_F = True
         
-        if self.backend == 'sqlite':
-            cursor = self.conn.cursor()
-            cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
-            ('E_PRS_F',)
-            )
-            top_ER_PRS_F = cursor.fetchone() is not None
+        # if self.backend == 'sqlite':
+        #     cursor = self.conn.cursor()
+        #     cursor.execute(
+        #     "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
+        #     ('E_PRS_F',)
+        #     )
+        #     top_ER_PRS_F = cursor.fetchone() is not None
 
         if self.backend == 'spark':
             top_ER_PRS_F = self.conn.catalog.tableExists('ER_PRS_F')
@@ -876,13 +876,13 @@ class SNDS_Query() :
 
         top_ER_PRS_F = True
         
-        if self.backend == 'sqlite':
-            cursor = self.conn.cursor()
-            cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
-            ('E_PRS_F',)
-            )
-            top_ER_PRS_F = cursor.fetchone() is not None
+        # if self.backend == 'sqlite':
+        #     cursor = self.conn.cursor()
+        #     cursor.execute(
+        #     "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
+        #     ('E_PRS_F',)
+        #     )
+        #     top_ER_PRS_F = cursor.fetchone() is not None
 
         if self.backend == 'spark':
             top_ER_PRS_F = self.conn.catalog.tableExists('ER_PRS_F')
@@ -1078,14 +1078,14 @@ class SNDS_Query() :
         df_ucd_dcir = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'EXE_SOI_DTF', 'UCD_UCD_COD', 'COD_UCD', 'PHA_ATC_CLA', 'PHA_ATC_LIB','PHA_ATC_C03', 'PHA_ATC_L03'])
 
 
-        top_ER_PRS_F = True
-        if self.backend == 'sqlite':
-            cursor = self.conn.cursor()
-            cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
-            ('E_PRS_F',)
-            )
-            top_ER_PRS_F = cursor.fetchone() is not None
+        # top_ER_PRS_F = True
+        # if self.backend == 'sqlite':
+        #     cursor = self.conn.cursor()
+        #     cursor.execute(
+        #     "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
+        #     ('E_PRS_F',)
+        #     )
+        #     top_ER_PRS_F = cursor.fetchone() is not None
 
 
         if self.backend == 'spark':
