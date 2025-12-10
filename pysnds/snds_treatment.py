@@ -203,18 +203,19 @@ class SNDS_Treatment(SNDS_Query) :
                 atc_pmsi['DATE'] = pd.to_datetime(atc_pmsi['EXE_SOI_DTD']) #+ pd.to_timedelta(atc_pmsi['DELAI'], unit='days')
                 atc_dcir = self.loc_atc_dcir(list_ATC=dict_code['ATC'], df_ID_PATIENT=df_ID_PATIENT, years=years, print_option=False)
 
-                df_atc = pd.DataFrame({'BEN_IDT_ANO' : np.concatenate((atc_pmsi.BEN_IDT_ANO, atc_dcir.BEN_IDT_ANO)),
-                                       'BEN_NIR_PSA' : np.concatenate((atc_pmsi.BEN_NIR_PSA, atc_dcir.BEN_NIR_PSA)),
-                                       'BEN_RNG_GEM' : np.concatenate((atc_pmsi.BEN_RNG_GEM, atc_dcir.BEN_RNG_GEM)),
-                                    'COD_ACT' : np.nan,
-                                    'COD_DIAG' : np.nan,
-                                    'COD_UCD' : np.nan,
-                                    'COD_CIP' : np.nan,
-                                    'COD_ATC' : np.concatenate((atc_pmsi.PHA_ATC_CLA, atc_dcir.PHA_ATC_CLA)),
-                                    'DATE' : np.concatenate((pd.to_datetime(atc_pmsi.EXE_SOI_DTD).dt.strftime('%Y-%m-%d'), pd.to_datetime(atc_dcir.EXE_SOI_DTD).dt.strftime('%Y-%m-%d')))})
-                
-                df_date = pd.concat([d for d in [df_date, df_atc] if not d.empty], ignore_index=True)
-                df_date["DATE"] = pd.to_datetime(df_date["DATE"], format="%Y-%m-%d", errors="coerce")
+                if (atc_pmsi.shape[0]!=0) | (atc_dcir.shape[0]!=0) :
+                    df_atc = pd.DataFrame({'BEN_IDT_ANO' : np.concatenate((atc_pmsi.BEN_IDT_ANO, atc_dcir.BEN_IDT_ANO)),
+                                           'BEN_NIR_PSA' : np.concatenate((atc_pmsi.BEN_NIR_PSA, atc_dcir.BEN_NIR_PSA)),
+                                           'BEN_RNG_GEM' : np.concatenate((atc_pmsi.BEN_RNG_GEM, atc_dcir.BEN_RNG_GEM)),
+                                        'COD_ACT' : np.nan,
+                                        'COD_DIAG' : np.nan,
+                                        'COD_UCD' : np.nan,
+                                        'COD_CIP' : np.nan,
+                                        'COD_ATC' : np.concatenate((atc_pmsi.PHA_ATC_C07, atc_dcir.PHA_ATC_C07)),
+                                        'DATE' : np.concatenate((pd.to_datetime(atc_pmsi.EXE_SOI_DTD).dt.strftime('%Y-%m-%d'), pd.to_datetime(atc_dcir.EXE_SOI_DTD).dt.strftime('%Y-%m-%d')))})
+                    
+                    df_date = pd.concat([d for d in [df_date, df_atc] if not d.empty], ignore_index=True)
+                    df_date["DATE"] = pd.to_datetime(df_date["DATE"], format="%Y-%m-%d", errors="coerce")
                 
         return df_date
     
