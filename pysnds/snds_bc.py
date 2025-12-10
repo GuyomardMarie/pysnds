@@ -1,6 +1,7 @@
 from .snds_query import SNDS_Query
 from .snds_treatment import SNDS_Treatment
 import pkg_resources
+import sqlite3
 import json
 import pandas as pd
 import numpy as np
@@ -113,7 +114,7 @@ class SNDS_BC(SNDS_Treatment) :
         # Biopsy
         df_dates_diag_subset = df_dates_diag[df_dates_diag["Date_Diag"].isna()][['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']].reset_index(drop=True)
         df_ccam_dcir_biopsy = self.loc_ccam_dcir(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_core_biopsy']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False)
-        df_ccam_pmsi_biopsy = self.loc_ccam_pmsi(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_core_biopsy']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False, dev=False)
+        df_ccam_pmsi_biopsy = self.loc_ccam_pmsi(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_core_biopsy']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False, dev=dev)
         df_ccam_biopsy = pd.concat([df_ccam_dcir_biopsy[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']], df_ccam_pmsi_biopsy[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']]]).drop_duplicates().reset_index(drop=True)
 
         df_merged_biopsy = df_ccam_biopsy.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_biopsy", "_df_first_treatment"))
@@ -136,17 +137,18 @@ class SNDS_BC(SNDS_Treatment) :
             df_ccam_pmsi_cytology = self.loc_ccam_pmsi(list_CCAM=self.BC_medical_codes['Diag_Proc']['Fine_needle_aspiration_cytology']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False, dev=dev)
             df_ccam_cytology = pd.concat([df_ccam_dcir_cytology[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']], df_ccam_pmsi_cytology[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']]]).drop_duplicates().reset_index(drop=True)
 
-            df_merged_cytology = df_ccam_cytology.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_biopsy", "_df_first_treatment"))
-            df_filtered_cytology = df_merged_cytology[
-            (df_merged_cytology["EXE_SOI_DTD"] > df_merged_cytology["DATE"] - pd.DateOffset(years=1)) &
-            (df_merged_cytology["EXE_SOI_DTD"] < df_merged_cytology["DATE"])
-            ]
-            df_result_cytology = df_filtered_cytology.groupby(["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], as_index=False).agg(DATE=("EXE_SOI_DTD","min"))
-            df_result_cytology["BEN_RNG_GEM"] = df_result_cytology["BEN_RNG_GEM"].astype(int)
-            
-            df_merged = df_dates_diag.merge(df_result_cytology, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
-            df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
-            df_dates_diag = df_merged.drop(columns="DATE")
+            if df_ccam_cytology.shape[0]!=0 :
+                df_merged_cytology = df_ccam_cytology.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_biopsy", "_df_first_treatment"))
+                df_filtered_cytology = df_merged_cytology[
+                (df_merged_cytology["EXE_SOI_DTD"] > df_merged_cytology["DATE"] - pd.DateOffset(years=1)) &
+                (df_merged_cytology["EXE_SOI_DTD"] < df_merged_cytology["DATE"])
+                ]
+                df_result_cytology = df_filtered_cytology.groupby(["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], as_index=False).agg(DATE=("EXE_SOI_DTD","min"))
+                df_result_cytology["BEN_RNG_GEM"] = df_result_cytology["BEN_RNG_GEM"].astype(int)
+                
+                df_merged = df_dates_diag.merge(df_result_cytology, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
+                df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
+                df_dates_diag = df_merged.drop(columns="DATE")
             
         # Breast Imaging Procedure
         df_dates_diag_subset = df_dates_diag[df_dates_diag["Date_Diag"].isna()][['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']].reset_index(drop=True)
@@ -156,32 +158,33 @@ class SNDS_BC(SNDS_Treatment) :
             df_ccam_dcir_imagery = self.loc_ccam_dcir(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_Imaging_Procedures']['All']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False)
             df_ccam_pmsi_imagery = self.loc_ccam_pmsi(list_CCAM=self.BC_medical_codes['Diag_Proc']['Breast_Imaging_Procedures']['All']['CCAM'], df_ID_PATIENT=df_dates_diag_subset, years=years, print_option=False, dev=dev)
             df_ccam_imagery = pd.concat([df_ccam_dcir_imagery[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']], df_ccam_pmsi_imagery[['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'EXE_SOI_DTD']]]).drop_duplicates().reset_index(drop=True)
-            df_ccam_imagery["EXE_SOI_DTD"] = pd.to_datetime(df_ccam_imagery["EXE_SOI_DTD"], errors="coerce")
-            df_ccam_imagery["BEN_RNG_GEM"] = df_ccam_imagery["BEN_RNG_GEM"].astype(int)
-            df_first_treatment["BEN_RNG_GEM"] = df_first_treatment["BEN_RNG_GEM"].astype(int)
             
-            df_merged_imagery = df_ccam_imagery.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_imagery", "_df_first_treatment"))
-            df_filtered_imagery = df_merged_imagery[(df_merged_imagery["EXE_SOI_DTD"] < df_merged_imagery["DATE"])]
+            if df_ccam_imagery.shape[0]!=0 :
+                df_ccam_imagery["EXE_SOI_DTD"] = pd.to_datetime(df_ccam_imagery["EXE_SOI_DTD"], errors="coerce")
+                df_ccam_imagery["BEN_RNG_GEM"] = df_ccam_imagery["BEN_RNG_GEM"].astype(int)
+                df_first_treatment["BEN_RNG_GEM"] = df_first_treatment["BEN_RNG_GEM"].astype(int)
+                
+                df_merged_imagery = df_ccam_imagery.merge(df_first_treatment, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], suffixes=("_df_ccam_imagery", "_df_first_treatment"))
+                df_filtered_imagery = df_merged_imagery[(df_merged_imagery["EXE_SOI_DTD"] < df_merged_imagery["DATE"])]
 
-            def select_imagery_date_diag(group):
-                group = group.sort_values("EXE_SOI_DTD", ascending=False).reset_index(drop=True)
-                current = group.loc[0, "EXE_SOI_DTD"]
+                def select_imagery_date_diag(group):
+                    group = group.sort_values("EXE_SOI_DTD", ascending=False).reset_index(drop=True)
+                    current = group.loc[0, "EXE_SOI_DTD"]
 
-                for d in group["EXE_SOI_DTD"][1:]:
-                    if d > (current - relativedelta(months=1)):
-                        current = d  
-                    else:
-                        break        
+                    for d in group["EXE_SOI_DTD"][1:]:
+                        if d > (current - relativedelta(months=1)):
+                            current = d  
+                        else:
+                            break        
 
-                return current
+                    return current
 
-            df_result_imagery = df_filtered_imagery.groupby(["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"]).apply(select_imagery_date_diag)
-            df_result_imagery = df_result_imagery.reset_index(name="DATE")
-            df_result_imagery["BEN_RNG_GEM"] = df_result_imagery["BEN_RNG_GEM"].astype(int)
-            
-            df_merged = df_dates_diag.merge(df_result_imagery, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
-            df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
-            df_dates_diag = df_merged.drop(columns="DATE")
+                df_result_imagery = df_filtered_imagery.groupby(["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"]).apply(select_imagery_date_diag).reset_index(name="DATE")
+                df_result_imagery["BEN_RNG_GEM"] = df_result_imagery["BEN_RNG_GEM"].astype(int)
+                
+                df_merged = df_dates_diag.merge(df_result_imagery, on=["BEN_IDT_ANO", "BEN_NIR_PSA", "BEN_RNG_GEM"], how="left")
+                df_merged["Date_Diag"] = df_merged["DATE"].combine_first(df_merged["Date_Diag"])
+                df_dates_diag = df_merged.drop(columns="DATE")
 
         # First treatment date
         df_dates_diag_subset = df_dates_diag[df_dates_diag["Date_Diag"].isna()][['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']].reset_index(drop=True)
@@ -256,13 +259,13 @@ class SNDS_BC(SNDS_Treatment) :
 
         top_ER_PRS_F = True
 
-        if self.backend == 'sqlite':
-            cursor = self.conn.cursor()
-            cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
-            ('E_PRS_F',)
-            )
-            top_ER_PRS_F = cursor.fetchone() is not None
+        # if self.backend == 'sqlite':
+        #     cursor = self.conn.cursor()
+        #     cursor.execute(
+        #     "SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
+        #     ('E_PRS_F',)
+        #     )
+        #     top_ER_PRS_F = cursor.fetchone() is not None
 
         if self.backend == 'spark':
             top_ER_PRS_F = self.conn.catalog.tableExists('ER_PRS_F')
@@ -410,6 +413,9 @@ class SNDS_BC(SNDS_Treatment) :
         df_age_diag = self.Get_AGE(years=years, dev=dev)
         df_age_diag["BEN_RNG_GEM"] = df_age_diag["BEN_RNG_GEM"].astype(int)
 
+        df_date_diag['Date_Diag'] = pd.to_datetime(df_date_diag['Date_Diag']).dt.date
+        df_age_diag['EXE_SOI_DTD'] = pd.to_datetime(df_age_diag['EXE_SOI_DTD']).dt.date
+        
         df_diag = df_age_diag.merge(df_date_diag, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
         df_diag = df_diag[df_diag.EXE_SOI_DTD==df_diag.Date_Diag]
         df_diag.drop(['EXE_SOI_DTD'], axis=1, inplace=True)
@@ -450,9 +456,9 @@ class SNDS_BC(SNDS_Treatment) :
         surgery_date = self.first_date_treatment(dict_code=self.BC_medical_codes['Surgery_BC']['Surgery'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
         treatment_date = self.first_date_treatment(dict_code=dict_treatment, df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
 
-        merged = pd.merge(treatment_date[['BEN_IDT_ANO', 'DATE']], 
-                        surgery_date[['BEN_IDT_ANO', 'DATE']], 
-                        on='BEN_IDT_ANO', 
+        merged = pd.merge(treatment_date, 
+                        surgery_date, 
+                        on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], 
                         how='left', 
                         suffixes=('_treatment', '_surgery'))
 
@@ -464,8 +470,7 @@ class SNDS_BC(SNDS_Treatment) :
         # Adjuvant
         merged.loc[np.where(merged['DATE_treatment'] > merged['DATE_surgery'])[0], 'Setting'] = 'Adjuvant'
 
-        df_treatment_setting = pd.DataFrame({'BEN_IDT_ANO': self.df_ID_PATIENT.BEN_IDT_ANO})
-        df_treatment_setting = pd.merge(df_treatment_setting, merged[['BEN_IDT_ANO', 'Setting']], on='BEN_IDT_ANO', how='left', suffixes=('', '_merged'))
+        df_treatment_setting = pd.merge(self.df_ID_PATIENT, merged, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left', suffixes=('', '_merged'))
         df_treatment_setting['Setting'] = df_treatment_setting['Setting'].fillna('No')
         
         return df_treatment_setting
@@ -495,18 +500,19 @@ class SNDS_BC(SNDS_Treatment) :
 
         df_chemotherapy = self.Had_Treatment(self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
         df_res = df_chemotherapy.copy()
-        df_CT = self.treatment_dates(dict_code=self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
         df_res['CT_Regimen'] = np.nan
         df_res["CT_Regimen"] = df_res["CT_Regimen"].astype(str)
-        df_CT['DATE'] = pd.to_datetime(df_CT['DATE'])
 
-        df_CT = df_CT.groupby(['BEN_IDT_ANO', 'DATE'], as_index=False).agg({
+
+        df_CT = self.treatment_dates(dict_code=self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
+        df_CT.drop(['COD_CIP', 'COD_ATC'], axis=1, inplace=True)
+        df_CT['DATE'] = pd.to_datetime(df_CT['DATE'])
+        df_CT = df_CT.groupby(['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'DATE'], as_index=False).agg({
             'COD_UCD': 'first', 
             'COD_ACT': 'first',
-            'COD_DIAG': 'first',
-            'COD_CIP': 'first'
+            'COD_DIAG': 'first'
         })
-        df_CT = df_CT.drop_duplicates(subset=['BEN_IDT_ANO', 'DATE'])
+        df_CT = df_CT.drop_duplicates(subset=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'DATE'])
 
         # No CT
         df_res.loc[df_res['BEN_IDT_ANO'].isin(df_chemotherapy[df_chemotherapy.Response==0].BEN_IDT_ANO), 'CT_Regimen'] = 'No'
@@ -565,9 +571,10 @@ class SNDS_BC(SNDS_Treatment) :
             return 'Unknown'
 
 
-        df_CT_Regimen = df_filtered.groupby('BEN_IDT_ANO').apply(determine_CT_treatment).reset_index(name='Regimen')
+        df_CT_Regimen = df_filtered.groupby(['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']).apply(determine_CT_treatment).reset_index(name='Regimen')
 
-        df_res = df_res.merge(df_CT_Regimen[['BEN_IDT_ANO', 'Regimen']], on='BEN_IDT_ANO', how='left')
+        df_res = df_res.merge(df_CT_Regimen, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
+        df_res['CT_Regimen'].replace('nan', np.nan, inplace=True)
         df_res['CT_Regimen'] = df_res['CT_Regimen'].fillna(df_res['Regimen'])
         df_res = df_res.drop(columns=['Regimen'])
 
@@ -597,6 +604,8 @@ class SNDS_BC(SNDS_Treatment) :
         df_ET = self.treatment_dates(self.BC_medical_codes['ET']['All'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev)
         df_ET['DATE'] = pd.to_datetime(df_ET['DATE'])
         df_ET['COD_CIP'] = df_ET['COD_CIP'].astype(str)
+        df_ET.replace('nan', np.nan, inplace=True)
+        df_ET = df_ET[df_ET.COD_CIP.notna()] 
         df_ET = df_ET.sort_values(by=['BEN_IDT_ANO', 'DATE'])
 
         def determine_ET_treatment(group):
@@ -635,8 +644,9 @@ class SNDS_BC(SNDS_Treatment) :
 
 
         #df_ET_Regimen = (df_ET.groupby('BEN_IDT_ANO').apply(determine_ET_treatment).reset_index().rename(columns={0: "Regimen"}))
-        df_ET_Regimen = df_ET.groupby('BEN_IDT_ANO').apply(determine_ET_treatment).reset_index(name='Regimen')
-        df_res = df_res.merge(df_ET_Regimen[['BEN_IDT_ANO', 'Regimen']], on='BEN_IDT_ANO', how='outer')
+        df_ET_Regimen = df_ET.groupby(['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']).apply(determine_ET_treatment).reset_index(name='Regimen')
+        df_res = df_res.merge(df_ET_Regimen, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='outer')
+        df_res['Regimen'].replace('nan', np.nan, inplace=True)
         df_res['ET_Treatment'] = df_res['ET_Regimen'].fillna(df_res['Regimen'])
         df_res = df_res.drop(columns=['Regimen'])
 
@@ -680,22 +690,24 @@ class SNDS_BC(SNDS_Treatment) :
                 - 'ET_Regimen' : 'No', 'Unitherapy' or 'Bitherapy'
         '''
 
-        df = pd.DataFrame({'ID_PATIENT' : self.df_ID_PATIENT['BEN_IDT_ANO']})
-
         ### Age
-        df = pd.merge(df, self.Get_AGE(df_ID_PATIENT=self.df_ID_PATIENT, years=years, dev=dev), left_on='ID_PATIENT', right_on='BEN_IDT_ANO', how='left')
-        df.drop(columns=['BEN_IDT_ANO'], inplace=True)
-
+        df = self.Age_Diagnosis(years=years, dev=dev)
+        
         ### Nodal Status
-        df['Nodal_Status'] = self.Had_Treatment(self.BC_medical_codes['Diag_NodalStatus'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
-
+        df_nodal_status = self.Had_Treatment(self.BC_medical_codes['Diag_NodalStatus'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
+        df_nodal_status.rename(columns={'Response' : 'Nodal_Status'}, inplace=True)
+        df = df.merge(df_nodal_status, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         ### Surgery
         # Mastectomy
-        df['Mastectomy'] = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Mastectomy'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
+        df_masectomy = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Mastectomy'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
+        df_masectomy.rename(columns={'Response' : 'Mastectomy'}, inplace=True)
+        df = df.merge(df_masectomy, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Partial Mastectomy
-        df['Partial_Mastectomy'] = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Partial_Mastectomy'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
+        df_partial_masectomy = self.Had_Treatment(self.BC_medical_codes['Surgery_BC']['Partial_Mastectomy'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
+        df_partial_masectomy.rename(columns={'Response' : 'Partial_Mastectomy'}, inplace=True)
+        df = df.merge(df_partial_masectomy, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Surgery
         df['Surgery'] = ((df['Mastectomy'] == 1) | (df['Partial_Mastectomy'] == 1)).astype(int)
@@ -703,40 +715,58 @@ class SNDS_BC(SNDS_Treatment) :
 
         ### Chemotherapy
         # Yes / No
-        df['CT'] = self.Had_Treatment(self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
+        df_CT = self.Had_Treatment(self.BC_medical_codes['CT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
+        df_CT.rename(columns={'Response' : 'CT'}, inplace=True)
+        df = df.merge(df_CT, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Setting
-        df['CT_Setting'] = self.treatment_setting(self.BC_medical_codes['CT'], years=years, dev=dev)['Setting']
+        df_CT_setting = self.treatment_setting(self.BC_medical_codes['CT'], years=years, dev=dev)[['BEN_IDT_ANO','BEN_NIR_PSA', 'BEN_RNG_GEM', 'Setting']]
+        df_CT_setting.rename(columns={'Setting' : 'CT_Setting'}, inplace=True)
+        df = df.merge(df_CT_setting, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Regimen
-        df['CT_Regimen'] = self.Chemotherapy_Regimen(years=years, dev=dev)['CT_Regimen']
+        df_CT_regimen = self.Chemotherapy_Regimen(years=years, dev=dev)[['BEN_IDT_ANO','BEN_NIR_PSA', 'BEN_RNG_GEM', 'CT_Regimen']]
+        df = df.merge(df_CT_regimen, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
 
         ### Radiotherapy
         # Yes / No
-        df['RT'] = self.Had_Treatment(self.BC_medical_codes['RT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
+        df_RT = self.Had_Treatment(self.BC_medical_codes['RT'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
+        df_RT.rename(columns={'Response' : 'RT'}, inplace=True)
+        df = df.merge(df_RT, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Setting
-        df['RT_Setting'] = self.treatment_setting(self.BC_medical_codes['RT'], years=years, dev=dev)['Setting']
+        df_RT_setting = self.treatment_setting(self.BC_medical_codes['RT'], years=years, dev=dev)[['BEN_IDT_ANO','BEN_NIR_PSA', 'BEN_RNG_GEM', 'Setting']]
+        df_RT_setting.rename(columns={'Setting' : 'RT_Setting'}, inplace=True)
+        df = df.merge(df_RT_setting, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
 
         ### TT
         # Yes / No
-        df['TT'] = self.Had_Treatment(self.BC_medical_codes['TT']['Pertuzumab'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
-        
+        df_TT = self.Had_Treatment(self.BC_medical_codes['TT']['Pertuzumab'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
+        df_TT.rename(columns={'Response' : 'TT'}, inplace=True)
+        df = df.merge(df_TT, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
+
         # Setting
-        df['TT_Setting'] = self.treatment_setting(self.BC_medical_codes['TT']['Pertuzumab'], years=years, dev=dev)['Setting']
+        df_TT_setting = self.treatment_setting(self.BC_medical_codes['TT']['Pertuzumab'], years=years, dev=dev)[['BEN_IDT_ANO','BEN_NIR_PSA', 'BEN_RNG_GEM', 'Setting']]
+        df_TT_setting.rename(columns={'Setting' : 'TT_Setting'}, inplace=True)
+        df = df.merge(df_TT_setting, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         
         ### ET
         # Yes / No
-        df['ET'] = self.Had_Treatment(self.BC_medical_codes['ET']['All'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)['Response']
+        df_ET = self.Had_Treatment(self.BC_medical_codes['ET']['All'], df_ID_PATIENT=self.df_ID_PATIENT, years=years, print_option=False, dev=dev)
+        df_ET.rename(columns={'Response' : 'ET'}, inplace=True)
+        df = df.merge(df_ET, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Setting
-        df['ET_Setting'] = self.treatment_setting(self.BC_medical_codes['ET']['All'], years=years, dev=dev)['Setting']
+        df_ET_setting = self.treatment_setting(self.BC_medical_codes['ET']['All'], years=years, dev=dev)[['BEN_IDT_ANO','BEN_NIR_PSA', 'BEN_RNG_GEM', 'Setting']]
+        df_ET_setting.rename(columns={'Setting' : 'ET_Setting'}, inplace=True)
+        df = df.merge(df_ET_setting, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Treatment
-        df['ET_Treatment'] = self.EndoctrineTherapy_Treatment(years=years, dev=dev)['ET_Treatment']
+        df_ET_treatment = self.EndoctrineTherapy_Treatment(years=years, dev=dev)
+        df = df.merge(df_ET_treatment, on=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM'], how='left')
 
         # Regimen
         df['ET_Regimen'] = np.select([df['ET_Treatment'].isin(['AI', 'Tamoxifen']),
@@ -791,9 +821,9 @@ class SNDS_BC(SNDS_Treatment) :
                 return 10
             
             else :
-                return 'Unknown'
+                return 0
         
-        df_pathway = df_char.groupby('ID_PATIENT').apply(def_pathway).reset_index(name='Pathway')
+        df_pathway = df_char.groupby(['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']).apply(def_pathway).reset_index(name='Pathway')
 
         return df_pathway
     
@@ -827,7 +857,7 @@ class SNDS_BC(SNDS_Treatment) :
             else :
                 return 'Unknown'
         
-        df_subtype = df_char.groupby('ID_PATIENT').apply(def_BC_type).reset_index(name='BC_SubType')
+        df_subtype = df_char.groupby(['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM']).apply(def_BC_type).reset_index(name='BC_SubType')
 
         return df_subtype
 
@@ -930,7 +960,7 @@ class SNDS_BC(SNDS_Treatment) :
         if (age_range == True) & (pathway == False) :
 
             stat_age = {}
-            df_final['Age_range'] = pd.cut(df_final['AGE_DIAG'], 
+            df_final['Age_range'] = pd.cut(df_final['AGE'], 
                          bins=[0, 50, 60, 70, float('inf')], 
                          labels=["<50", "[50-60[", "[60-70[", ">=70"], 
                          right=False)
@@ -1018,7 +1048,7 @@ class SNDS_BC(SNDS_Treatment) :
         if (age_range == True) & (pathway == True) :
             
             stat_pathway_age = {}
-            df_final['Age_range'] = pd.cut(df_final['AGE_DIAG'], 
+            df_final['Age_range'] = pd.cut(df_final['AGE'], 
                          bins=[0, 50, 60, 70, float('inf')], 
                          labels=["<50", "[50-60[", "[60-70[", ">=70"], 
                          right=False)
