@@ -660,7 +660,7 @@ class SNDS_Query() :
         conditions = []
         if list_UCD:
             liste_ucd_str = ', '.join(f"'{val}'" for val in list_UCD)
-            conditions.append(f"RIGHT(B.UCD_UCD_COD, 7) IN ({liste_ucd_str})")
+            conditions.append(f"substr(B.UCD_UCD_COD, -7) IN ({liste_ucd_str})")
         if df_ID_PATIENT is not None and not df_ID_PATIENT.empty:
             liste_benidtano_str = ', '.join(f"'{val}'" for val in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
             conditions.append(f"C.BEN_IDT_ANO IN ({liste_benidtano_str})")
@@ -677,11 +677,11 @@ class SNDS_Query() :
                 C.BEN_RNG_GEM, 
                 C.BEN_NIR_PSA, 
                 B.UCD_UCD_COD,
-                RIGHT(B.UCD_UCD_COD, 7) AS COD_UCD,
+                substr(B.UCD_UCD_COD, -7) AS COD_UCD,
                 D.PHA_ATC_CLA,
                 D.PHA_ATC_LIB,
-                D.PHA_ATC_C03,
-                D.PHA_ATC_L03,
+                D.PHA_ATC_C07,
+                D.PHA_ATC_L07,
                 A.EXE_SOI_DTD, 
                 A.EXE_SOI_DTF
                 FROM T_MCOaaMED B
@@ -693,50 +693,17 @@ class SNDS_Query() :
                 ON A.NIR_ANO_17 = C.BEN_NIR_PSA
 
                 LEFT JOIN IR_PHA_R D
-                ON RIGHT(B.UCD_UCD_COD, 7) = D.PHA_CIP_UCD
+                ON substr(B.UCD_UCD_COD, -7)= D.PHA_CIP_UCD
 
                 {where_condition}
             """
-            df_ucd_pmsi_MED = self.GetQuery(query_UCD_PMSIMED)
-            df_ucd_pmsi_MED.drop_duplicates(inplace=True)
-            df_ucd_pmsi_MED.reset_index(drop=True, inplace=True)
-                
-            query_UCD_PMSIFH = f"""
-
-                SELECT DISTINCT
-                C.BEN_IDT_ANO, 
-                C.BEN_RNG_GEM, 
-                C.BEN_NIR_PSA, 
-                B.UCD_UCD_COD,
-                RIGHT(B.UCD_UCD_COD, 7) AS COD_UCD,
-                D.PHA_ATC_CLA,
-                D.PHA_ATC_LIB,
-                D.PHA_ATC_C03,
-                D.PHA_ATC_L03,
-                A.EXE_SOI_DTD, 
-                A.EXE_SOI_DTF
-                FROM T_MCOaaFH B
-
-                INNER JOIN T_MCOaaC A 
-                ON B.ETA_NUM = A.ETA_NUM AND B.RSA_NUM = A.RSA_NUM
-
-                INNER JOIN IR_BEN_R C
-                ON A.NIR_ANO_17 = C.BEN_NIR_PSA
-
-                LEFT JOIN IR_PHA_R D
-                ON RIGHT(B.UCD_UCD_COD, 7) = D.PHA_CIP_UCD
-
-                {where_condition}
-            """
-            df_ucd_pmsi_FH = self.GetQuery(query_UCD_PMSIFH)
-            df_ucd_pmsi = pd.concat([df_ucd_pmsi_MED, df_ucd_pmsi_FH], ignore_index=True)
+            df_ucd_pmsi = self.GetQuery(query_UCD_PMSIMED)
             df_ucd_pmsi.drop_duplicates(inplace=True)
             df_ucd_pmsi.reset_index(drop=True, inplace=True)
 
-
         else :
 
-            df_ucd_pmsi = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'UCD_UCD_COD', 'COD_UCD', 'PHA_ATC_CLA', 'PHA_ATC_LIB', 'PHA_ATC_C03', 'PHA_ATC_L03', 'EXE_SOI_DTD', 'EXE_SOI_DTF'])
+            df_ucd_pmsi = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_RNG_GEM', 'BEN_NIR_PSA', 'UCD_UCD_COD', 'COD_UCD', 'PHA_ATC_CLA', 'PHA_ATC_LIB', 'PHA_ATC_C07', 'PHA_ATC_L07', 'EXE_SOI_DTD', 'EXE_SOI_DTF'])
             yy = list(range(int(year_deb), int(year_end)+1))
 
             for year in yy :
@@ -752,11 +719,11 @@ class SNDS_Query() :
                     C.BEN_RNG_GEM, 
                     C.BEN_NIR_PSA, 
                     B.UCD_UCD_COD,
-                    RIGHT(B.UCD_UCD_COD, 7) AS COD_UCD,
+                    substr(B.UCD_UCD_COD, -7) AS COD_UCD,
                     D.PHA_ATC_CLA,
                     D.PHA_ATC_LIB,
-                    D.PHA_ATC_C03,
-                    D.PHA_ATC_L03,
+                    D.PHA_ATC_C07,
+                    D.PHA_ATC_L07,
                     A.EXE_SOI_DTD, 
                     A.EXE_SOI_DTF
                     FROM {table_nameMED} B
@@ -768,7 +735,7 @@ class SNDS_Query() :
                     ON A.NIR_ANO_17 = C.BEN_NIR_PSA
 
                     LEFT JOIN IR_PHA_R D
-                    ON RIGHT(B.UCD_UCD_COD, 7) = D.PHA_CIP_UCD
+                    ON substr(B.UCD_UCD_COD, -7) = D.PHA_CIP_UCD
 
                     {where_condition}
                 """
@@ -784,11 +751,11 @@ class SNDS_Query() :
                     C.BEN_RNG_GEM, 
                     C.BEN_NIR_PSA, 
                     B.UCD_UCD_COD,
-                    RIGHT(B.UCD_UCD_COD, 7) AS COD_UCD,
+                    substr(B.UCD_UCD_COD, -7) AS COD_UCD,
                     D.PHA_ATC_CLA,
                     D.PHA_ATC_LIB,
-                    D.PHA_ATC_C03,
-                    D.PHA_ATC_L03,
+                    D.PHA_ATC_C07,
+                    D.PHA_ATC_L07,
                     A.EXE_SOI_DTD, 
                     A.EXE_SOI_DTF
                     FROM {table_nameFH} B
@@ -800,7 +767,7 @@ class SNDS_Query() :
                     ON A.NIR_ANO_17 = C.BEN_NIR_PSA
 
                     LEFT JOIN IR_PHA_R D
-                    ON RIGHT(B.UCD_UCD_COD, 7) = D.PHA_CIP_UCD
+                    ON substr(B.UCD_UCD_COD, -7) = D.PHA_CIP_UCD
 
                     {where_condition}
                 """
@@ -871,7 +838,7 @@ class SNDS_Query() :
             vecflx.append(current_date.strftime("%Y-%m-%d"))
             current_date += relativedelta(months=1)
 
-        df_cip_dcir = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'EXE_SOI_DTF', 'PHA_CIP_C13', 'PHA_ATC_CLA', 'PHA_ATC_LIB', 'PHA_ATC_C03', 'PHA_ATC_L03'])
+        df_cip_dcir = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'EXE_SOI_DTF', 'PHA_CIP_C13', 'PHA_ATC_CLA', 'PHA_ATC_LIB', 'PHA_ATC_C07', 'PHA_ATC_L07'])
 
 
         top_ER_PRS_F = True
@@ -920,8 +887,8 @@ class SNDS_Query() :
                     D.PHA_PRS_C13 AS PHA_CIP_C13,
                     E.PHA_ATC_CLA,
                     E.PHA_ATC_LIB,
-                    E.PHA_ATC_C03,
-                    E.PHA_ATC_L03
+                    E.PHA_ATC_C07,
+                    E.PHA_ATC_L07
                     FROM ER_PRS_F A
 
                     INNER JOIN IR_BEN_R B
@@ -983,8 +950,8 @@ class SNDS_Query() :
                     D.PHA_PRS_C13 AS PHA_CIP_C13,
                     E.PHA_ATC_CLA,
                     E.PHA_ATC_LIB,
-                    E.PHA_ATC_C03,
-                    E.PHA_ATC_L03
+                    E.PHA_ATC_C07,
+                    E.PHA_ATC_L07
                     FROM ER_PRS_F_{year} A
 
                     INNER JOIN IR_BEN_R B
@@ -1075,10 +1042,11 @@ class SNDS_Query() :
             vecflx.append(current_date.strftime("%Y-%m-%d"))
             current_date += relativedelta(months=1)
 
-        df_ucd_dcir = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'EXE_SOI_DTF', 'UCD_UCD_COD', 'COD_UCD', 'PHA_ATC_CLA', 'PHA_ATC_LIB','PHA_ATC_C03', 'PHA_ATC_L03'])
+        df_ucd_dcir = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'EXE_SOI_DTF', 'UCD_UCD_COD', 'COD_UCD', 'PHA_ATC_CLA', 'PHA_ATC_LIB','PHA_ATC_C07', 'PHA_ATC_L07'])
 
 
-        # top_ER_PRS_F = True
+        top_ER_PRS_F = True
+        
         # if self.backend == 'sqlite':
         #     cursor = self.conn.cursor()
         #     cursor.execute(
@@ -1099,7 +1067,7 @@ class SNDS_Query() :
                 conditions = []
                 if list_UCD:
                     liste_ucd_str = ', '.join(f"'{val}'" for val in list_UCD)
-                    conditions.append(f"RIGHT(B.UCD_UCD_COD, 7) IN ({liste_ucd_str})")
+                    conditions.append(f"substr(B.UCD_UCD_COD, -7) IN ({liste_ucd_str})")
                 if df_ID_PATIENT is not None and not df_ID_PATIENT.empty:
                     liste_benidtano_str = ', '.join(f"'{val}'" for val in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
                     conditions.append(f"C.BEN_IDT_ANO IN ({liste_benidtano_str})")
@@ -1118,11 +1086,11 @@ class SNDS_Query() :
                         C.BEN_RNG_GEM, 
                         C.BEN_NIR_PSA, 
                         B.UCD_UCD_COD,
-                        RIGHT(B.UCD_UCD_COD, 7) AS COD_UCD,
+                        substr(B.UCD_UCD_COD, -7) AS COD_UCD,
                         D.PHA_ATC_CLA,
                         D.PHA_ATC_LIB,
-                        D.PHA_ATC_C03,
-                        D.PHA_ATC_L03,
+                        D.PHA_ATC_C07,
+                        D.PHA_ATC_L07,
                         A.EXE_SOI_DTD, 
                         A.EXE_SOI_DTF
                     FROM ER_UCD_F B
@@ -1143,7 +1111,7 @@ class SNDS_Query() :
                         ON A.BEN_NIR_PSA = C.BEN_NIR_PSA
 
                     LEFT JOIN IR_PHA_R D
-                        ON RIGHT(B.UCD_UCD_COD, 7) = D.PHA_CIP_UCD
+                        ON substr(B.UCD_UCD_COD, -7) = D.PHA_CIP_UCD
 
                     {where_condition}
 
@@ -1160,7 +1128,7 @@ class SNDS_Query() :
             conditions = []
             if list_UCD:
                 liste_ucd_str = ', '.join(f"'{val}'" for val in list_UCD)
-                conditions.append(f"RIGHT(B.UCD_UCD_COD, 7) IN ({liste_ucd_str})")
+                conditions.append(f"substr(B.UCD_UCD_COD, -7) IN ({liste_ucd_str})")
             if df_ID_PATIENT is not None and not df_ID_PATIENT.empty:
                 liste_benidtano_str = ', '.join(f"'{val}'" for val in np.unique(df_ID_PATIENT.BEN_IDT_ANO))
                 conditions.append(f"C.BEN_IDT_ANO IN ({liste_benidtano_str})")
@@ -1182,11 +1150,11 @@ class SNDS_Query() :
                     C.BEN_RNG_GEM, 
                     C.BEN_NIR_PSA, 
                     B.UCD_UCD_COD,
-                    RIGHT(B.UCD_UCD_COD, 7) AS COD_UCD,
+                    substr(B.UCD_UCD_COD, -7) AS COD_UCD,
                     D.PHA_ATC_CLA,
                     D.PHA_ATC_LIB,
-                    D.PHA_ATC_C03,
-                    D.PHA_ATC_L03,
+                    D.PHA_ATC_C07,
+                    D.PHA_ATC_L07,
                     A.EXE_SOI_DTD, 
                     A.EXE_SOI_DTF
                     FROM ER_UCD_F_{year} B
@@ -1207,7 +1175,7 @@ class SNDS_Query() :
                     ON A.BEN_NIR_PSA = C.BEN_NIR_PSA
 
                     LEFT JOIN IR_PHA_R D
-                    ON RIGHT(B.UCD_UCD_COD, 7) = D.PHA_CIP_UCD
+                    ON substr(B.UCD_UCD_COD, -7) = D.PHA_CIP_UCD
 
                     {where_condition}
 
@@ -1291,10 +1259,16 @@ class SNDS_Query() :
         """ 
         df_atc_cip_ucd = self.GetQuery(query_ATC)
 
-        list_UCD = df_atc_cip_ucd.PHA_CIP_UCD.tolist()
-        df_atc_pmsi = self.loc_ucd_pmsi(df_ID_PATIENT, years=years, list_UCD=list_UCD, print_option=print_option, dev=dev)
-        df_atc_pmsi.drop_duplicates(inplace=True)
-        df_atc_pmsi.reset_index(drop=True, inplace=True)
+        if df_atc_cip_ucd.shape[0] !=0 : 
+            list_UCD = df_atc_cip_ucd.PHA_CIP_UCD.tolist()
+            df_atc_pmsi = self.loc_ucd_pmsi(df_ID_PATIENT, years=years, list_UCD=list_UCD, print_option=print_option, dev=dev)
+            df_atc_pmsi.drop_duplicates(inplace=True)
+            df_atc_pmsi.reset_index(drop=True, inplace=True)
+
+        else :
+            df_atc_pmsi = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'PHA_ATC_CO7', 'PHA_ATC_LO7'])
+            if print_option :
+                print('No patient identified using ATC codes in the PMSI.')
 
         return df_atc_pmsi
 
@@ -1361,14 +1335,20 @@ class SNDS_Query() :
         """ 
         df_atc_cip_ucd = self.GetQuery(query_ATC)
 
-        list_UCD = df_atc_cip_ucd.PHA_CIP_UCD.tolist()
-        list_CIP13 = df_atc_cip_ucd.PHA_CIP_C13.tolist()
-        df_ucd_dcir = self.loc_ucd_dcir(df_ID_PATIENT, years=years, list_UCD=list_UCD, print_option=print_option)
-        df_cip_dcir = self.loc_cip_dcir(df_ID_PATIENT, years=years, list_CIP13=list_CIP13, print_option=print_option)
+        if df_atc_cip_ucd.shape[0] !=0 : 
+            list_UCD = df_atc_cip_ucd.PHA_CIP_UCD.tolist()
+            list_CIP13 = df_atc_cip_ucd.PHA_CIP_C13.tolist()
+            df_ucd_dcir = self.loc_ucd_dcir(df_ID_PATIENT, years=years, list_UCD=list_UCD, print_option=print_option)
+            df_cip_dcir = self.loc_cip_dcir(df_ID_PATIENT, years=years, list_CIP13=list_CIP13, print_option=print_option)
 
-        df_atc_dcir = pd.concat([df_ucd_dcir, df_cip_dcir]).drop_duplicates().reset_index(drop=True)
-        df_atc_dcir.drop_duplicates(inplace=True)
-        df_atc_dcir.reset_index(drop=True, inplace=True)
+            df_atc_dcir = pd.concat([df_ucd_dcir, df_cip_dcir]).drop_duplicates().reset_index(drop=True)
+            df_atc_dcir.drop_duplicates(inplace=True)
+            df_atc_dcir.reset_index(drop=True, inplace=True)
+
+        else :
+            df_atc_dcir = pd.DataFrame(columns=['BEN_IDT_ANO', 'BEN_NIR_PSA', 'BEN_RNG_GEM', 'EXE_SOI_DTD', 'PHA_ATC_CO7', 'PHA_ATC_LO7'])
+            if print_option :
+                print('No patient identified using ATC codes in the DCIR.')
         
         return df_atc_dcir
 
@@ -1394,7 +1374,7 @@ class SNDS_Query() :
         list_CIP13 : list
             List of CIP-13 codes to be retrieved. If None all CIP-13 codes will be returned for the targeted population. Default is None.
         list_ATC : list
-            List of ATC codes to be retrieved. If None ATC  codes will NOT be returned for the targeted population. Default is None.
+            List of ATC codes to be retrieved. If None ATC codes will NOT be returned for the targeted population. Default is None.
         export : bool, optional
             If True, the resulting dataframe of records will be exported in pickle format. Default is False.
         path : str, optional
@@ -1508,10 +1488,12 @@ class SNDS_Query() :
             "COD_UCD": None,
             "COD_ATC": ATC_concat["PHA_ATC_CLA"]
             })
+        else :
+            df_atc = pd.DataFrame()
 
 
         # Fusion
-        df_records = pd.concat([df_ccam, df_icd10, df_ucd, df_cip], ignore_index=True)
+        df_records = pd.concat([df_ccam, df_icd10, df_ucd, df_cip, df_atc], ignore_index=True)
         df_records = df_records.sort_values(by=["BEN_IDT_ANO", "DATE"]).reset_index(drop=True)
 
         if export==True :
