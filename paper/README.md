@@ -7,11 +7,9 @@ tags:
 authors:
   - name: Marie Guyomard
     corresponding: true
-    equal-contrib: true
     affiliation: 1
     orcid: 0009-0004-1108-9511
   - name: Anne-Déborah Bouhnik
-    equal-contrib: true 
     affiliation: 1
   - name: Raquel Ureña
     corresponding: true
