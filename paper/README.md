@@ -75,7 +75,7 @@ This complex architecture makes it particularly challenging to retrieve relevant
 
 The `pysnds` package consists of two main classes: `SNDS_Treatment`, which inherits from the base class `SNDS_Query`. The key attribute of these classes is a connection to the databases. Currently, a **SQLite** connection is supported by the package, adapted for use with the simulated dataset[^1]. In addition, the package supports a **Spark Hive** connection, as it was developed and tested within the Health Data Hub Platform[^2]. The package can also be easily extended to support **Oracle** connections once Python becomes available within the CNAM environment.
 
-[^1] : [Link to the data for reviewers. The dataset will be available in open access when the paper related to its construction will be published.](https://osf.io/n6ctf/?view_only=40eafca1cc7c42d7815abf2d57f7bc14)
+[^1] : The dataset will be available in open access when the paper related to its construction will be published. A temporary link can be shared for reviewers. 
 
 [^2] [The Health Data Hub is the structure in charge of granting access to SNDS data.](https://www.health-data-hub.fr/)
 
