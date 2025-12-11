@@ -12,7 +12,6 @@ authors:
   - name: Anne-Déborah Bouhnik
     affiliation: 1
   - name: Raquel Ureña
-    corresponding: true
     affiliation: 1
 affiliations:
  - name: SESSTIM, Aix-Marseille University, France
