@@ -38,7 +38,7 @@ The package offers two key contributions:
 
 Thus, the `pysnds` package enables a comprehensive understanding of the study population. To showcase its wide range of functionalities, the package provides tools to characterize a population of women being treated for breast cancer. This example can be easily adapted and customized for other target populations.
 
----
+
 
 ## Statement of need
 
@@ -73,7 +73,6 @@ Nevertheless, the information within the SNDS is distributed across more than **
 
 This complex architecture makes it particularly challenging to retrieve relevant clinical information and accurately define target populations, due to the vast number of medical codes involved, which are often abstract and difficult to interpret. To address these challenges, we propose an open-source package designed to facilitate the identification of patient study patients within the SNDS architecture.
 
----
 
 ## Description of the package and its functionalities
 
@@ -83,7 +82,7 @@ The `pysnds` package consists of two main classes: `SNDS_Treatment`, which inher
 
 [^2] [The Health Data Hub is the structure in charge of granting access to SNDS data.](https://www.health-data-hub.fr/)
 
----
+
 
 ### SNDS_Query
 
@@ -174,13 +173,13 @@ The Figure 3 is produced by these functionalities and illustrates the different 
 
 Although tailored to breast cancer, these tools can be adapted to other pathologies by users, by providing a dictionnary of medical codes related to the specific pathology. A complete example of use of the whole functionalities is provided with the package.
 
----
+
 
 ## Conclusion and Perspectives
 
 The provided package allows SNDS users to efficiently access relevant medical information within this complex database architecture. Developed in `Python` for compatibility with the Health Data Hub platform, it can also be adapted to `R` to extend its use to the CNAM platform. While the illustrative example focuses on breast cancer, the approach can be readily applied to other pathologies, provided that the corresponding treatment dictionaries are available. Contributions and collaborations are highly encouraged to further enrich the package, enhance its functionalities, and facilitate the exploration of the SNDS.
 
----
+
 
 ## Acknowledgements
 
@@ -188,7 +187,7 @@ We thank Thomas Guyet for useful discussions about the architecture of the SNDS.
 
 This work was supported by a research grant from the Research French Agency ANR - PEPR Digital Health under the number ANR-22-PESN-0005.The project leading to this publication has received funding from the Excellence Initiative of Aix-Marseille Université - AMidex, a French “Investissements d’Avenir programme” AMX-21-IET-017.
 
----
+
 
 ## References
 
