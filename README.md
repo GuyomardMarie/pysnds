@@ -47,14 +47,26 @@ This class explores the complex architecture of the SNDS database to identify th
 
 All these functionalities take as input unique patient identifiers, a list of targeted medical codes and an optional period of inclusion.
 
-One specific method, `Get_ID`, retrieves the unique patient identifiers:
+**Table 1.** Functions to locate medical codes with information regarding the databases in the SNDS used to retrieve the information and the outputs. ID* refers to the unique identifiers of a patient `BEN_IDT_ANO`, `BEN_NIR_PSA` and `BEN_RNG_GEM`.
 
-- In the DCIR: combination of `BEN_NIR_PSA` and `BEN_RNG_GEM`,
-- In the PMSI: `NIR_ANO_17`, linked to `BEN_NIR_PSA` in the DCIR.
 
-This method returns both the updated unique identifier `BEN_IDT_ANO` (ensuring it reflects the latest update date `BEN_DTE_MAJ`) as well as the original identifier pair for completeness.
+| Function          | Table                              | Columns of output Dataframe                                                                                         | Definition                                                                                                           |
+|------------------|------------------------------------|---------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| **Identification of CCAM Codes** |                                    |                                                                                                                     |                                                                                                                     |
+| loc_ccam_dcir     | ER_CAM_F                            | - ID* <br> - CAM_PRS_IDE <br> - EXE_SOI_DTD <br> - EXE_SOI_DTF                                                     | - Identifiers <br> - Code CCAM <br> - Start Date ('YYYY-MM-DD') <br> - End Date ('YYYY-MM-DD')                     |
+| loc_ccam_pmsi     | T_MCOaaA                            | - ID* <br> - CDC_ACT <br> - EXE_SOI_DTD <br> - DELAI <br> - EXE_SOI_DTF                                            | - Identifiers <br> - Code CCAM <br> - Start Date ('YYYY-MM-DD') <br> - Delay from Start Date <br> - End Date ('YYYY-MM-DD') |
+| **Identification of ICD-10 Codes** |                           |                                                                                                                     |                                                                                                                     |
+| loc_icd10_pmsi    | T_MCOaaB & T_MCOaaD                 | - ID* <br> - DGN_PAL <br> - DGN_REL <br> - ASS_DGN <br> - EXE_SOI_DTD <br> - EXE_SOI_DTF                           | - Identifiers <br> - Principal Diagnosis <br> - Related Diagnosis <br> - Associated Diagnosis <br> - Start Date ('YYYY-MM-DD') <br> - End Date ('YYYY-MM-DD') |
+| **Identification of UCD Codes** |                             |                                                                                                                     |                                                                                                                     |
+| loc_ucd_dcir      | ER_UCD_F                            | - ID* <br> - UCD_UCD_COD <br> - COD_UCD <br> - PHA_ATC_CLA <br> - PHA_ATC_LIB <br> - PHA_ATC_C03 <br> - PHA_ATC_L03 <br> - EXE_SOI_DTD <br> - EXE_SOI_DTF | - Identifiers <br> - UCD codes CHAR(13) <br> - Last 7 digits of UCD_UCD_COD CHAR(7) <br> - Therapeutic class CHAR(13) <br> - Label of therapeutic class <br> - Second-level ATC code CHAR(3) <br> - Second-level ATC label <br> - Start Date ('YYYY-MM-DD') <br> - End Date ('YYYY-MM-DD') |
+| loc_ucd_pmsi      | T_MCOaaMED & T_MCOaaFH              | - ID* <br> - UCD_UCD_COD <br> - COD_UCD <br> - PHA_ATC_CLA <br> - PHA_ATC_LIB <br> - PHA_ATC_C03 <br> - PHA_ATC_L03 <br> - EXE_SOI_DTD <br> - EXE_SOI_DTF | - Identifiers <br> - UCD codes CHAR(13) <br> - Last 7 digits of UCD_UCD_COD CHAR(7) <br> - Therapeutic class CHAR(13) <br> - Label of therapeutic class <br> - Second-level ATC code CHAR(3) <br> - Second-level ATC label <br> - Start Date ('YYYY-MM-DD') <br> - End Date ('YYYY-MM-DD') |
+| **Identification of CIP-13 Codes** |                           |                                                                                                                     |                                                                                                                     |
+| loc_cip_dcir      | ER_PHA_F                            | - ID* <br> - PHA_PRS_C13 as PHA_CIP_13 <br> - PHA_ATC_CLA <br> - PHA_ATC_LIB <br> - PHA_ATC_C03 <br> - PHA_ATC_L03 <br> - EXE_SOI_DTD <br> - EXE_SOI_DTF | - Identifiers <br> - CIP-13 codes CHAR(13) <br> - Therapeutic class CHAR(13) <br> - Label of therapeutic class <br> - Second-level ATC code CHAR(3) <br> - Second-level ATC label <br> - Start Date ('YYYY-MM-DD') <br> - End Date ('YYYY-MM-DD') |
+| **Identification of ATC Codes** |                             |                                                                                                                     |                                                                                                                     |
+| loc_atc_dcir      | loc_ucd_dcir <br> loc_cip_dcir      |                                                                                                                     |                                                                                                                     |
+| loc_atc_pmsi      | loc_ucd_pmsi                        |                                                                                                                     |                                                                                                                     |
 
-Once the target population is identified, another method, `Get_AGE`, computes the age at inclusion based on the first occurrence of a relevant medical code.
+
 
 ---
 
